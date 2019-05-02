@@ -1,0 +1,10 @@
+version: "2"
+services:
+
+  tower:
+    container_name: tower
+    image: $TOWER_IMAGE_NAME
+    build: ./build
+    restart: always
+    ports:
+    - $TOWER_INTERNAL_PORT:$TOWER_EXTERNAL_PORT

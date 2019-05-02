@@ -1,0 +1,36 @@
+---
+- !policy
+  id: client
+  annotations:
+    description: Conjur policy for Automation client node
+  body:
+  - !layer nodes
+
+  - !host node
+
+  - !host-factory
+    id: node_factory
+    layer: [ nodes ]
+
+- !policy
+  id: cicd-secrets
+  body:
+  - !variable test-db-username
+  - !variable test-db-password
+  - !variable prod-db-username
+  - !variable prod-db-password
+
+  # Permit node identity to retrieve secrets
+- !permit
+  privileges: [ read, execute ]
+  roles:
+  - !host client/node
+  - !layer client/nodes
+  resources:
+  - !variable cicd-secrets/test-db-username
+  - !variable cicd-secrets/test-db-password
+  - !variable cicd-secrets/prod-db-username
+  - !variable cicd-secrets/prod-db-password
+  - !variable DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/username
+  - !variable DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/password
+  - !variable DemoVault/CICD/CICD_Secrets/SSH-minikube/password

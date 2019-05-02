@@ -1,0 +1,28 @@
+---
+- !policy
+  id: webapp
+  body:
+  - !layer tomcat_hosts
+
+  - !host tomcat_host
+
+  - !grant
+    role: !layer tomcat_hosts
+    member: !host tomcat_host
+
+  - !host-factory
+    id: tomcat_hosts
+    layers: [ !layer tomcat_hosts ] 
+
+- !policy
+  id: webapp-secrets
+  body:
+  - !variable database_username
+  - !variable database_password
+
+- !permit
+  role: !layer webapp/tomcat_hosts
+  privileges: [ read, execute ]
+  resources:
+  - !variable webapp-secrets/database_username
+  - !variable webapp-secrets/database_password

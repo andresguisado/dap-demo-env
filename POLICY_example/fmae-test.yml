@@ -1,0 +1,32 @@
+---
+- !policy
+  id: client
+  annotations:
+    description: Conjur policy for Automation client node
+  body:
+  - !layer nodes
+
+  - !host node
+
+- !grant
+  role: !layer client/nodes
+  member: !host client/node
+
+- !policy
+  id: cicd-secrets
+  body:
+  - !variable test-db-username
+  - !variable test-db-password
+  - !variable prod-db-username
+  - !variable prod-db-password
+
+  # Permit node identity to retrieve secrets
+- !permit
+  privileges: [ read, execute ]
+  roles:
+  - !layer client/nodes
+  resources:
+  - !variable cicd-secrets/test-db-username
+  - !variable cicd-secrets/test-db-password
+  - !variable cicd-secrets/prod-db-username
+  - !variable cicd-secrets/prod-db-password

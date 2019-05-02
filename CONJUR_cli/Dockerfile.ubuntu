@@ -1,0 +1,8 @@
+FROM ubuntu:16.04
+
+RUN     apt-get update &&\
+        apt-get install -qy apt-utils dpkg libexpat1-dev libpython2.7-dev python2.7-dev vim &&\
+        rm -rf /var/lib/apt/lists/* &&\
+	apt-get update && \
+        apt-get install -qy ruby-dev rubygems build-essential && \
+        gem install conjur-cli -v 6.1.0

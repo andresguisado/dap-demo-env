@@ -1,0 +1,5 @@
+#!/bin/bash
+
+source tower-demo.config
+
+docker-compose down

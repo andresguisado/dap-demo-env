@@ -1,0 +1,29 @@
+---
+##############
+# GLOBAL ROLES
+##############
+- !group masters
+
+##############
+# ENV POLICIES
+##############
+- !policy
+  id: dev
+  annotations:
+    description: Dev root policy
+  body:
+  - !group admins
+
+- !policy
+  id: test
+  annotations:
+    description: Test root policy
+  body:
+  - !group admins
+
+- !policy
+  id: prod
+  annotations:
+    description: Prod root policy
+  body:
+  - !group admins

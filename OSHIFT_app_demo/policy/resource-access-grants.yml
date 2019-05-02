@@ -1,0 +1,19 @@
+---
+# Grant application layers access to secrets
+- !permit
+  privileges: [ read, execute ]
+  roles:
+  - !layer cust-portal/webservers
+  resources:
+  - !variable k8s-secrets/app-username
+  - !variable k8s-secrets/app-apikey
+
+- !permit
+  privileges: [ read, execute ]
+  roles:
+  - !layer cust-portal/appservers
+  resources:
+  - !variable DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/username
+  - !variable DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/password
+  - !variable k8s-secrets/db-username
+  - !variable k8s-secrets/db-password

@@ -1,0 +1,60 @@
+#!/bin/bash 
+set -eu pipefail
+
+rm -rf ca
+mkdir -p ca
+
+printf "Generating root CA key..."
+openssl genrsa -aes256 \
+	-passout pass:root_p@55w0rD \
+        -out ca/root.key 4096  >& /dev/null
+chmod 400 ca/root.key
+
+printf "\nGenerating root CA certificate..."
+openssl req -new -x509 -sha256 -days 730 \
+        -config openssl.conf \
+        -subj "/C=US/ST=./L=./O=./CN=Conjur Root CA" \
+        -extensions v3_ca \
+        -key ca/root.key \
+	-passin pass:root_p@55w0rD \
+        -out ca/root.crt  >& /dev/null
+chmod 444 ca/root.crt
+
+printf "\nGenerating intermediate CA key..."
+openssl genrsa \
+	-passout pass:int_p@55w0rD \
+	-out ca/intermediate.key 4096  >& /dev/null
+chmod 400 ca/intermediate.key
+
+printf "\nGenerating CSR for the intermediate cert..."
+openssl req -new -sha256 \
+	-subj "/C=US/ST=./L=./O=./CN=Conjur Intermediate CA" \
+	-key ca/intermediate.key \
+	-passin pass:int_p@55w0rD \
+	-out ca/intermediate.csr  >& /dev/null
+
+printf "\nSigning intermediate cert with root cert..."
+openssl x509 -req -days 1000 \
+	-extfile openssl.conf \
+	-in ca/intermediate.csr \
+	-extensions v3_intermediate_ca \
+	-CA ca/root.crt \
+	-passin pass:root_p@55w0rD \
+	-CAkey ca/root.key \
+	-CAcreateserial \
+	-out ca/intermediate.crt  >& /dev/null
+chmod 444 ca/intermediate.crt
+
+#printf "\nVerifying the intermediate certificate..."
+#openssl x509 -noout -text \
+#      -in ca/intermediate.crt
+
+printf "\nVerifying intermediate cert against root cert: "
+openssl verify -CAfile ca/root.crt \
+      ca/intermediate.crt
+
+printf "Concatenating root & intermediate certs as ca-chain cert..."
+cat ca/intermediate.crt \
+      ca/root.crt > ca/ca-chain.crt
+chmod 444 ca/ca-chain.crt
+

@@ -1,0 +1,15 @@
+version: '2'
+services:
+
+  client:
+    image: client_node:latest
+    container_name: client_node
+    build: ./build
+    extra_hosts: 
+      - "$CONJUR_MASTER_HOST_NAME:$CONJUR_MASTER_HOST_IP"
+    environment:
+      TERM: xterm
+      CONJUR_MASTER_HOST_NAME: $CONJUR_MASTER_HOST_NAME
+    entrypoint: sleep
+    command: infinity
+    restart: always

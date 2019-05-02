@@ -1,0 +1,64 @@
+#!/bin/bash -x
+
+source tower-demo.config
+
+main() {
+#  tower_up
+#  load_license
+#  load_user
+#  load_org
+   load_id_cred
+}
+
+tower_up() {
+  docker-compose up -d tower
+  # wait for Tower to startup
+  sleep 30
+}
+
+load_license() {
+  curl -k --header "Content-Type: application/json" \
+    --request POST \
+    --user "admin:password" \
+    --data "$(cat $LICENSE_FILE)" \
+    $TOWER_EXTERNAL_URL/api/v2/config/
+}
+
+load_user() {
+  curl -k --header "Content-Type: application/json" \
+    --request POST \
+    --user "admin:password" \
+    --data "{					\
+	\"username\": \"$TOWER_USER\",		\
+	\"first_name\": \"$TOWER_USER\",	\
+	\"last_name\": \"litwak\",		\
+	\"email\": \"$TOWER_USER@cyberark.com\",\
+	\"is_superuser\": true,			\
+	\"is_system_auditor\": true,		\
+	\"password\": \"$TOWER_PASSWORD\"	\
+	}"					\
+    $TOWER_EXTERNAL_URL/api/v2/users/
+
+}
+
+load_org() {
+  curl -k --header "Content-Type: application/json" \
+    --request PUT \
+    --user "admin:password" \
+    --data "{
+      \"name\": \"$TOWER_ORGANIZATION\", \
+      \"description\": \"Main Organization\",
+      \"custom_virtualenv\": null \
+      }" \
+      $TOWER_EXTERNAL_URL/api/v2/organizations/1/
+}
+
+load_id_cred() {
+  curl -k --header "Content-Type: application/json" \
+    --request POST \
+    --user "admin:password" \
+    --data "$(cat $CRED_FILE)" \
+    $TOWER_EXTERNAL_URL/api/v2/credentials/
+}
+
+main "$@"

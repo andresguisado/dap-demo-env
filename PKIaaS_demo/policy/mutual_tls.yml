@@ -1,0 +1,63 @@
+- !policy 
+  id: conjur/mutual-tls/ca
+  body:
+
+    - !variable private-key
+    - !variable cert-chain
+
+    # Signed certificates will be valid for 1 day 
+    - !webservice
+        annotations:
+          ca/private-key: conjur/mutual-tls/ca/private-key
+          ca/certificate-chain: conjur/mutual-tls/ca/cert-chain
+          ca/max_ttl: P1D
+
+    - !layer clients
+
+    # Allow hosts in the `clients` layer to be signed 
+    - !permit
+      role: !layer clients
+      privilege: [ sign ]
+      resource: !webservice
+
+    # Allow hosts in the `clients` layer to retrieve ca/cert-chain
+    - !permit
+      role: !layer clients
+      privilege: [ read, execute ]
+      resource: !variable cert-chain
+
+- !policy
+  id: mutual-tls/server
+  body:
+    - !host 
+    - !variable private-key
+    - !variable cert
+
+    - !permit
+      role: !host
+      privilege: [ read, execute, update ]
+      resource:
+      - !variable private-key
+      - !variable cert
+
+- !policy
+  id: mutual-tls/client
+  body:
+    - !host 
+    - !variable private-key
+    - !variable cert
+
+    - !permit
+      role: !host
+      privilege: [ read, execute, update ]
+      resource:
+      - !variable private-key
+      - !variable cert
+
+# Grant hosts membership in CA's clients layer so they can be signed
+- !grant
+  role: !layer conjur/mutual-tls/ca/clients
+  members:
+    - !host mutual-tls/server
+    - !host mutual-tls/client
+

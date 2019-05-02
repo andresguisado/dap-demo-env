@@ -1,0 +1,39 @@
+version: "2"
+
+networks:
+  demo:
+  bridge:
+
+services:
+  demo-pg:
+    image: postgres:9.3
+    container_name: postgresdb
+    ports: [ "35432:5432" ]
+    networks:
+      - demo
+    volumes:
+      - "postgresdata:/var/lib/postgresql/data"
+
+  hello:
+    build: .
+    image: hello:demo
+    ports: [ "$SPRING_PORT:8080" ]
+    container_name: hello
+    extra_hosts: 
+      - "$CONJUR_MASTER_HOST_NAME:$CONJUR_MASTER_HOST_IP"
+    environment:
+      TERM: xterm
+      CONJUR_VERSION: "5"
+      CONJUR_APPLIANCE_URL: https://$CONJUR_MASTER_HOST_NAME:$CONJUR_MASTER_PORT
+      CONJUR_CERT_FILE: /etc/conjur-$CONJUR_ACCOUNT.pem
+      CONJUR_ACCOUNT: $CONJUR_ACCOUNT
+      CONJUR_AUTHN_LOGIN: $CONJUR_AUTHN_LOGIN
+      CONJUR_AUTHN_API_KEY: $CONJUR_AUTHN_API_KEY
+    command: [ "sleep", "20000000" ]
+#    command: [ "java", "-jar", "./hello-0.1.0.jar" ]
+    networks:
+      - demo
+      - bridge
+
+volumes:
+  postgresdata:

@@ -1,0 +1,12 @@
+#!/bin/bash 
+set -ou pipefail
+
+./stop
+./0_check_dependencies.sh
+./1_build_and_push_containers.sh
+if [[ $CONJUR_SIMPLE_CLUSTER == true ]]; then
+  ./2_deploy_simple_cluster.sh
+else
+  ./2_deploy_master_cluster.sh
+fi
+./3_print_config.sh

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+./0_load_policy.sh
+./1_create_ca.sh
+./2_create_server_cert.sh
+./3_create_client_cert.sh
+./4_build_all.sh
+./5_connect.sh

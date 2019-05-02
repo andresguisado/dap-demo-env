@@ -1,0 +1,8 @@
+---
+# grant specific roles access to common secrets
+- !permit
+  privileges: [ read, execute ]
+  roles:
+  - !host {{ HOSTNAME }}
+  resources:
+  - !variable {{ VARNAME }}

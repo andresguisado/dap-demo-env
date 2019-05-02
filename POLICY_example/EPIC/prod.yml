@@ -1,0 +1,22 @@
+---
+- !policy
+  id: prod
+  annotations:
+    description: Prod root policy
+  body:
+  - !group admins
+
+  - !layer hosts
+  - !host-factory
+    id: hosts
+    layers: [ !layer hosts ]
+
+  - &variables
+    - !variable common-prod-secret1
+    - !variable common-prod-secret2
+
+  - !permit
+    privileges: [ read, execute ]
+    roles:
+    - !layer hosts
+    resources: *variables

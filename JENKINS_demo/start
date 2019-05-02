@@ -1,0 +1,6 @@
+#!/bin/bash 
+source jenkins-demo.config
+
+docker-compose up -d
+docker cp ./demo/. jenkins-master:/demo/
+docker exec -itu root jenkins-master bash

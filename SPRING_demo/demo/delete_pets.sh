@@ -1,0 +1,8 @@
+#!/bin/bash
+source ../spring-demo.config
+
+echo "Deleting 4 pets.."
+curl -XDELETE $CONJUR_MASTER_HOST_NAME:$SPRING_PORT/pet/1
+curl -XDELETE $CONJUR_MASTER_HOST_NAME:$SPRING_PORT/pet/2
+curl -XDELETE $CONJUR_MASTER_HOST_NAME:$SPRING_PORT/pet/3
+curl -XDELETE $CONJUR_MASTER_HOST_NAME:$SPRING_PORT/pet/4

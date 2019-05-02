@@ -1,0 +1,9 @@
+---
+# Tasks to install required packages for EL distros
+- name: Install playbook dependencies
+  yum:
+    name: '{{ item }}'
+    state: installed
+    disable_gpg_check: '{{not gpgcheck|bool}}'
+  with_items: "{{ el_dependencies }}"
+

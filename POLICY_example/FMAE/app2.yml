@@ -1,0 +1,27 @@
+---
+##############
+# LAYERS/HOSTS
+##############
+- !policy
+  id: app2
+  annotations:
+    description: Application 2
+  body:
+  - !layer nodes
+  - !host node
+
+  - !grant
+    role: !layer nodes
+    members:
+    - !host node
+    - !group /masters
+
+  - &variables
+    - !variable secret1
+    - !variable secret2
+
+  - !permit
+    privileges: [ read, execute ]
+    roles:
+    - !layer nodes
+    resources: *variables

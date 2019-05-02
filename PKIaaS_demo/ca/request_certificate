@@ -1,0 +1,71 @@
+#!/bin/bash 
+set -eou pipefail
+
+main() {
+  if [[ $# != 3 ]]; then
+    echo
+    echo "Usage: $0 <host-id> <key-var-name> <cert-var-name>"
+    echo
+    exit -1
+  fi
+  HOST_LOGIN=$1
+  KEY_VAR_NAME=$2
+  CERT_VAR_NAME=$3
+
+  # Authenticate as host identity with Conjur 
+  encoded_login=$(urlencode "host/$HOST_LOGIN")
+  auth_token=$(curl -s -X POST \
+		--cacert "$CONJUR_CERT_FILE" \
+		-d $CONJUR_AUTHN_API_KEY \
+          	"$CONJUR_APPLIANCE_URL/authn/$CONJUR_ACCOUNT/$encoded_login/authenticate" \
+	          | base64 | tr -d '\r\n')
+
+  if [[ "$auth_token" == "" ]]; then
+    echo "Authentication failure for $HOST_LOGIN..."
+    echo
+    exit -1
+  fi
+
+  # Generate private key for $HOST_LOGIN and certificate signing request (CSR)
+  $(openssl genrsa -out ./temp.key 2048)
+  key=$(cat ./temp.key)
+  curl -s --data-binary "$key" \
+     --cacert "$CONJUR_CERT_FILE" \
+     -H "Authorization: Token token=\"$auth_token\"" \
+     "$CONJUR_APPLIANCE_URL/secrets/$CONJUR_ACCOUNT/variable/$KEY_VAR_NAME"
+  echo "Updated $KEY_VAR_NAME..."
+
+  # Generate CSR for requestor using private key
+  openssl req -new -sha256 \
+        -subj "/C=US/ST=./L=./O=./CN=requestor" \
+        -key ./temp.key \
+        -out ./temp.csr
+
+  # Request a certificate from the CA configured in Conjur
+  cert=$(curl -s \
+		-X POST \
+     		-H "Authorization: Token token=\"$auth_token\"" \
+		--cacert "$CONJUR_CERT_FILE" \
+		-d "ttl=P1D" \
+		--data-urlencode "csr@temp.csr" \
+                -H "Accept: application/x-pem-file" \
+		"$CONJUR_APPLIANCE_URL/ca/$CONJUR_ACCOUNT/$CA_SERVICE_ID/sign")
+  rm ./temp.csr ./temp.key
+
+  # Extract cert from response and store as Conjur var
+  curl --data-binary "$cert" \
+     --cacert "$CONJUR_CERT_FILE" \
+     -H "Authorization: Token token=\"$auth_token\"" \
+     "$CONJUR_APPLIANCE_URL/secrets/$CONJUR_ACCOUNT/variable/$CERT_VAR_NAME"
+  echo "Updated $CERT_VAR_NAME..."
+}
+
+urlencode() {
+        local str=$1; shift
+        str=$(echo $str | sed 's= =%20=g')
+        str=$(echo $str | sed 's=/=%2F=g')
+        str=$(echo $str | sed 's=:=%3A=g')
+	echo $str
+}
+
+main "$@"

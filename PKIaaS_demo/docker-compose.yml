@@ -1,0 +1,22 @@
+version: "2"
+services:
+
+  # nginx web server
+  server:
+    build: ./build/server
+    container_name: server
+    extra_hosts:
+      - "$CONJUR_MASTER_HOST_NAME: $CONJUR_MASTER_HOST_IP"
+    ports:
+      - "9080:80"
+      - "9443:443"
+  
+  # curl web client
+  client:
+    build: ./build/client
+    container_name: client
+    entrypoint: "sleep infinity"
+    environment:
+      TERM: xterm
+    extra_hosts:
+      - "$CONJUR_MASTER_HOST_NAME: $CONJUR_MASTER_HOST_IP"

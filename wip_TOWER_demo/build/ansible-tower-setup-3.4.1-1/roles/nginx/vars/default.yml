@@ -1,0 +1,3 @@
+---
+nginx_init_name: "nginx"
+httpd_init_name: "httpd"

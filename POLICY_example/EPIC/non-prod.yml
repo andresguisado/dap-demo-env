@@ -1,0 +1,22 @@
+---
+- !policy
+  id: non-prod
+  annotations:
+    description: Non-Prod root policy
+  body:
+  - !group admins
+
+  - !layer hosts
+  - !host-factory
+    id: hosts
+    layers: [ !layer hosts ]
+
+  - &variables
+    - !variable common-non-prod-secret1
+    - !variable common-non-prod-secret2
+
+  - !permit
+    privileges: [ read, execute ]
+    roles:
+    - !layer hosts
+    resources: *variables

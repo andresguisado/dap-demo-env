@@ -1,0 +1,49 @@
+{
+  "inputs": {
+     "fields": [
+        {
+           "id": "api_key",
+           "secret": true,
+           "type": "string",
+           "label": "API Key"
+        },
+        {
+           "id": "account",
+           "type": "string",
+           "label": "Conjur Acct"
+        },
+        {
+           "id": "appliance_url",
+           "type": "string",
+           "label": "Appliance Url"
+        },
+        {
+           "id": "conjur_ca_cert",
+           "secret": true,
+           "type": "string",
+           "label": "Conjur Certificate",
+           "multiline": true,
+           "help_text": "Paste the contents of the PEM file associated with the Conjur Appliance."
+        }
+     ],
+     "required": [
+        "api_key",
+        "account",
+        "appliance_url"
+     ]
+  },
+  "injectors": {
+     "file": {
+        "template": "{{ conjur_ca_cert }}"
+     },
+     "env": {
+        "CONJUR_APPLIANCE_URL": "{{appliance_url}}",
+        "CONJUR_ACCOUNT": "{{account}}",
+        "CONJUR_AUTHN_API_KEY": "{{api_key}}",
+        "CLIENT_CERTIFICATE": "{{ tower.filename }}"
+     }
+  },
+  "name": "Conjur API Key",
+  "description": "",
+  "managed_by_tower": false
+}

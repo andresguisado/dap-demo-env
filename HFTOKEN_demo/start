@@ -1,0 +1,36 @@
+#!/bin/bash 
+
+source ./hftoken-demo.config
+
+check_env_var "CONJUR_ACCOUNT"
+check_env_var "CONJUR_APPLIANCE_URL"
+check_env_var "CONJUR_MASTER_HOST_NAME"
+check_env_var "CONJUR_MASTER_HOST_IP"
+check_env_var "CONJUR_MASTER_PORT"
+check_env_var "CLI_IMAGE_NAME"
+check_env_var "DEMO_CLIENT"
+
+echo "Starting demo container..."
+docker run -d \
+  --entrypoint sh \
+  --workdir /demo \
+  --name $DEMO_CLIENT \
+  --env CONJUR_APPLIANCE_URL=https://$CONJUR_MASTER_HOST_NAME:$CONJUR_MASTER_PORT \
+  --env CONJUR_MASTER_HOST_NAME=$CONJUR_MASTER_HOST_NAME \
+  --env CONJUR_MASTER_HOST_IP=$CONJUR_MASTER_HOST_IP \
+  --env CONJUR_MASTER_PORT=$CONJUR_MASTER_PORT \
+  --env CONJUR_ACCOUNT=$CONJUR_ACCOUNT \
+  $CLI_IMAGE_NAME \
+  -c "sleep infinity"
+
+sleep 2
+# use 'docker cp' in lieu of volume mount
+docker cp ./demo/. $DEMO_CLIENT:/demo/
+clear
+docker exec -it $DEMO_CLIENT bash
+
+# delete container on exit
+echo "Deleting demo container..."
+docker stop $DEMO_CLIENT
+sleep 2
+docker rm $DEMO_CLIENT
