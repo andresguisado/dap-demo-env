@@ -1,22 +1,35 @@
-# ans-cmaster-cluster
+# dap-demo-env
 
+## Configuration files - review and edit first
+ - demo.config - master config file
+ - openshift.config - config for minishift env
+ - kubernetes.config - config for minikube env
+ - utils.sh - should not need editing
 
-These scripts, Ansible playbooks and roles will install a complete Conjur Master cluster (1 master, 2 standbys, load balancer, admin CLI) on fresh Linux inventory host(s). CentOS7, RHEL7.5 and Ubuntu 18.04/bionic have been tested and verified. Multiple inventory hosts of any type can be specified, with each host containing an entire Conjur Master cluster, with all Conjur nodes, LB & CLI running in the same Docker daemon. This configuration should only be used for testing purposes and is expressly NOT recommended for Production deployments.
+## Management scripts
+ - install_dependencies.sh - installs minikube, minishift, etc.
+ - oc-minishift-start.sh - start, stops & reinitialized minishift env
+ - k8s-minikube-start.sh - start, stops & reinitialized minikube env
+ - 0_load_images - utility for bulk image loading from tarfiles
+ - bring_up.sh - starts up demos once minishift/kube are running
 
-Linux inventory hosts should be initially provisioned with at least 8GB RAM, 20GB HDD, 4 CPU cores, networking support with internet access and a user with sudo privileges. All installation is performed as that user using sudo as needed, not with root login. If multiple inventory hosts are specified, they must all be provisioned with the same installation user and password. The Conjur appliance, CLI and HAProxy load balancer images are loaded from tarfiles, not built or pulled from internet repos. All package dependencies are assumed accessible from their respective internet repos.
+## Demo directories
+ - 1_master_cluster - starts master & cli in minishift/kube docker daemon
+ - 2_epv_synchronizer - initializes new Conjur master for synchronizer
+ - CICD_demos - general Summon demo w/ chef, ansible & terraform integration demos
+ - JENKINS_demo - Jenkins plugin demo
+ - OSHIFT_followers - Follower installation in k8s or Openshift (works for both)
+ - OSHIFT_app_demo - Demo app in k8s or Openshift (works for both)
+ - SPLUNK_demo - Splunk integration demo
+ - AWS_authn_demo - sets up AWS authn-iam demo in AWS (separate master)
+ - PKIaaS_demo
+ - AIMCCP_demo
+ - PUPPET_demo
+ - SPRING_demo
+ - HFTOKEN_demo
+ - POLICY_example
 
-Variables in inventory.yml should be reviewed and edited before running any scripts. The inventory variables define resources (e.g ssh keys, tarfiles) and control optional and one-time task execution, e.g. Red Hat subscription initialization, machine preparation, docker installation, tarfile/image deletion, etc.
-
-The scripts invoke Ansible playbooks and should be run in numerical order. 
-
-Directory contents:
- - 0_installAnsible.sh - installs Ansible on localhost
- - inventory.yml - defines variables and inventory hosts
- - 1_inventoryBootstrap.sh - sets up SSH, passwordless sudo and python on inventory hosts 
- - 2_setupConjur.sh - installs dependencies, Docker and Conjur cluster
- - invBootstrap.yml - playbook to setup SSH and sudo access on inventory hosts
- - conjurSetup.yml - playbook to setup entire Conjur cluster
- - conjurDestroy.yml - playbook to destroy entire Conjur cluster
- - roles/ - directory of Ansible roles for machine prep, Docker and Conjur setup
- - client_test/ - directory for load testing of Conjur cluster
- - failover/ - directory for failover testing of Conjur cluster
+## Works in progress (don't use)
+ - CONJUR_cli
+ - K8S-app
+ - wip_TOWER_demo
