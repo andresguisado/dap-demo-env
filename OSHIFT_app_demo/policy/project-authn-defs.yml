@@ -1,7 +1,7 @@
 ---
 # This policy defines a layer of whitelisted identities permitted to authenticate to the authn-k8s endpoint.
 - !policy
-  id: conjur/authn-k8s/cle/apps
+  id: conjur/authn-k8s/dev/apps
   annotations:
     description: Identities permitted to authenticate 
   body:
@@ -11,22 +11,22 @@
 
   - &service_accounts
     - !host
-      id: cust-portal/service_account/k8s-webserver
+      id: dev/service_account/k8s-webserver
       annotations:
         kubernetes/authentication-container-name: authenticator
         kubernetes: "true"
     - !host
-      id: cust-portal/service_account/k8s-appserver
+      id: dev/service_account/k8s-appserver
       annotations:
         kubernetes/authentication-container-name: authenticator
         kubernetes: "true"
     - !host
-      id: cust-portal/service_account/ocp-webserver
+      id: dev/service_account/ocp-webserver
       annotations:
         kubernetes/authentication-container-name: authenticator
         openshift: "true"
     - !host
-      id: cust-portal/service_account/ocp-appserver
+      id: dev/service_account/ocp-appserver
       annotations:
         kubernetes/authentication-container-name: authenticator
         openshift: "true"

@@ -52,9 +52,9 @@ push_cli() {
   announce "Pulling and pushing Conjur CLI image."
 
   if [[ $CONNECTED == true ]]; then
-    docker pull cyberark/conjur-cli:$CONJUR_VERSION-latest
+    docker pull $CLI_IMAGE_NAME
   fi
-  docker tag cyberark/conjur-cli:$CONJUR_VERSION-latest conjur-cli:$CONJUR_NAMESPACE_NAME
+  docker tag $CLI_IMAGE_NAME conjur-cli:$CONJUR_NAMESPACE_NAME
 
   if [[ $oshift != unset ]]; then
     docker_tag_and_push $CONJUR_NAMESPACE_NAME "conjur-cli"

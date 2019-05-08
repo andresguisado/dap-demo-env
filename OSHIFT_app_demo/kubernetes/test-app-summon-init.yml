@@ -10,7 +10,7 @@ spec:
     port: 8080
     targetPort: 8080
   selector:
-    app: k8s-webserver
+    app: webserver
   type: LoadBalancer
 ---
 apiVersion: v1

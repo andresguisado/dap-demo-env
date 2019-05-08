@@ -3,7 +3,7 @@
 - !permit
   privileges: [ read, execute ]
   roles:
-  - !layer cust-portal/webservers
+  - !layer dev/webservers
   resources:
   - !variable k8s-secrets/app-username
   - !variable k8s-secrets/app-apikey
@@ -11,9 +11,9 @@
 - !permit
   privileges: [ read, execute ]
   roles:
-  - !layer cust-portal/appservers
+  - !layer dev/appservers
   resources:
-  - !variable DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/username
-  - !variable DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/password
+#  - !variable DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/username
+#  - !variable DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/password
   - !variable k8s-secrets/db-username
   - !variable k8s-secrets/db-password

@@ -1,6 +1,6 @@
 ---
 - !policy
-  id: cust-portal
+  id: dev
   annotations:
     description: This policy defines the identity structure for the application
   body:
@@ -11,11 +11,11 @@
   - !grant
     role: !layer webservers
     members:
-    - !host /conjur/authn-k8s/cle/apps/cust-portal/service_account/k8s-webserver
-    - !host /conjur/authn-k8s/cle/apps/cust-portal/service_account/ocp-webserver
+    - !host /conjur/authn-k8s/dev/apps/dev/service_account/k8s-webserver
+    - !host /conjur/authn-k8s/dev/apps/dev/service_account/ocp-webserver
 
   - !grant
     role: !layer appservers
     members:
-    - !host /conjur/authn-k8s/cle/apps/cust-portal/service_account/k8s-appserver
-    - !host /conjur/authn-k8s/cle/apps/cust-portal/service_account/ocp-appserver
+    - !host /conjur/authn-k8s/dev/apps/dev/service_account/k8s-appserver
+    - !host /conjur/authn-k8s/dev/apps/dev/service_account/ocp-appserver

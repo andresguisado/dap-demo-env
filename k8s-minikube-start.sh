@@ -39,7 +39,9 @@ else
   vboxmanage snapshot minikube list
   minikube start --memory "$MINIKUBE_VM_MEMORY" \
                   --vm-driver virtualbox \
-                  --kubernetes-version "$KUBERNETES_VERSION"
+                  --kubernetes-version "$KUBERNETES_VERSION" \
+		  --extra-config=apiserver.admission-control="MutatingAdmissionWebhook"
+
   if [[ ! -d $KUBECONFIGDIR ]]; then
     mkdir $KUBECONFIGDIR
     cp -r ~/.kube/* $KUBECONFIGDIR

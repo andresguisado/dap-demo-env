@@ -17,6 +17,7 @@ main() {
   fi
 
   create_k8s_secrets
+  initialize_injector
   deploy_sidecar_app
   deploy_init_container_app
   sleep 15  # allow time for containers to initialize
@@ -136,4 +137,15 @@ deploy_init_container_app() {
   echo "Test webserver w/ init-container authenticator client deployed."
 }
 
+initialize_injector() {
+
+kubectl label --overwrite=true \
+  namespace ${TEST_APP_NAMESPACE_NAME} \
+  cyberark-sidecar-injector=enabled
+
+kubectl get namespace -L cyberark-sidecar-injector
+
+}
+
 main $@
+

@@ -13,7 +13,7 @@
   roles:
   - !layer {{ TEST_APP_NAMESPACE_NAME }}/appservers
   resources:
-  - !variable DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/username
-  - !variable DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/password
+#  - !variable DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/username
+#  - !variable DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/password
   - !variable k8s-secrets/db-username
   - !variable k8s-secrets/db-password
