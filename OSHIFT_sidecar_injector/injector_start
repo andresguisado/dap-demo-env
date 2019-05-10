@@ -1,38 +1,32 @@
 #!/bin/bash -x
 # Manual deployment steps from:
 # https://github.com/cyberark/sidecar-injector#installing-the-sidecar-injector-manually
+set -e
 
-NAMESPACE=injectors
+export NAMESPACE=test-injectors
 TMPDIR=/tmp
 LABEL=cyberark-sidecar-injector
 
-./stop
+./injector_stop
 
 # create namespace for injectors
 kubectl create namespace $NAMESPACE
 
-docker exec -it $CLI_CONTAINER_NAME \
-	conjur variable value mutual-tls/server/cert >  $TMPDIR/server-cert.pem
-
-docker exec -it $CLI_CONTAINER_NAME \
-	conjur variable value mutual-tls/server/private-key > $TMPDIR/server-key.pem
-
 # create the secret with CA cert and server cert/key
-kubectl create secret generic $LABEL \
-        --from-file=key.pem=$TMPDIR/server-key.pem \
-        --from-file=cert.pem=$TMPDIR/server-cert.pem \
-        --dry-run -o yaml |
-    kubectl -n $NAMESPACE apply -f -
+./deployment/webhook-create-signed-cert.sh \
+    --service "${LABEL}" \
+    --secret "${LABEL}" \
+    --namespace "${NAMESPACE}"
 
 # Patch the MutatingWebhookConfiguration - set caBundle cluster value
-cat deployment/mutatingwebhook.yaml |    	\
-  deployment/webhook-patch-ca-bundle.sh  	\
-   --namespace-selector-label $LABEL 		\
-   --service $LABEL				\
-   --namespace $NAMESPACE >  			\
+cat deployment/mutatingwebhook.yaml | \
+  deployment/webhook-patch-ca-bundle.sh \
+   --namespace-selector-label "${LABEL}" \
+   --service "$LABEL" \
+   --namespace "$NAMESPACE" > \
    deployment/mutatingwebhook-ca-bundle.yaml
 
-kubectl -n injectors apply -f deployment/deployment.yaml
-kubectl -n injectors apply -f deployment/service.yaml
-kubectl -n injectors apply -f deployment/mutatingwebhook-ca-bundle.yaml
-kubectl -n injectors get pods
+kubectl -n "${NAMESPACE}" apply -f deployment/deployment.yaml
+kubectl -n "${NAMESPACE}" apply -f deployment/service.yaml
+kubectl -n "${NAMESPACE}" apply -f deployment/mutatingwebhook-ca-bundle.yaml
+kubectl -n "${NAMESPACE}" get pods

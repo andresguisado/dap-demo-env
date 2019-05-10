@@ -1,4 +1,3 @@
 #!/bin/bash
-kubectl -n injectors delete -f deployment/deployment.yaml
-kubectl -n injectors delete -f deployment/service.yaml
-kubectl -n injectors delete -f deployment/mutatingwebhook-ca-bundle.yaml
+
+kubectl delete namespace "${NAMESPACE}"

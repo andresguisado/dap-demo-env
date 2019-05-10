@@ -53,6 +53,10 @@ set -o pipefail
 
 export CA_BUNDLE=$(kubectl get configmap -n kube-system extension-apiserver-authentication -o=jsonpath='{.data.client-ca-file}' | base64 | tr -d '\n')
 
+export namespaceSelectorLabel
+export namespace
+export service
+
 if command -v envsubst >/dev/null 2>&1; then
     envsubst
 else
