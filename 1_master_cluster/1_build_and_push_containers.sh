@@ -51,9 +51,9 @@ push_haproxy() {
 push_cli() {
   announce "Pulling and pushing Conjur CLI image."
 
-  if [[ $CONNECTED == true ]]; then
-    docker pull $CLI_IMAGE_NAME
-  fi
+#  if [[ $CONNECTED == true ]]; then
+#    docker pull $CLI_IMAGE_NAME
+#  fi
   docker tag $CLI_IMAGE_NAME conjur-cli:$CONJUR_NAMESPACE_NAME
 
   if [[ $oshift != unset ]]; then

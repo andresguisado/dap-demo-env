@@ -8,12 +8,9 @@ source ./aws.config
 
 #################
 main() {
+  ./stop_conjur
   master_up
   cli_up
-
-  # setup summon provider
-  sudo mkdir -p /usr/local/lib/summon
-  sudo cp demo/summon-aws.rb /usr/local/lib/summon
 }
 
 #################
@@ -70,6 +67,10 @@ cli_up() {
     --entrypoint sh \
     $CLI_IMAGE_NAME \
     -c "sleep infinity"
+
+  # if not relying on DNS - add entry for master host name to cli container's /etc/hosts
+#  sudo docker exec $CLI_CONTAINER_NAME \
+#    bash -c "echo \"$CONJUR_MASTER_HOST_IP    $CONJUR_MASTER_HOST_NAME\" >> /etc/hosts"
 
   # Initialize connection to service (create .conjurrc and conjur-xx.pem cert)
   sudo docker exec $CLI_CONTAINER_NAME \

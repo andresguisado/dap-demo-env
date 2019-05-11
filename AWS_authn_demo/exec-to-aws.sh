@@ -1,8 +1,2 @@
-#!/bin/bash
-##########################################
-##  This script Executes on local host  ##
-##########################################
-
-source ./aws.config
-set -x
+source conjur_setup/aws.config
 ssh -i $AWS_SSH_KEY ubuntu@$AWS_PUB_DNS

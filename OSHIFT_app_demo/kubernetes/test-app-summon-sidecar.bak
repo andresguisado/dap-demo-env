@@ -31,12 +31,6 @@ spec:
       app: appserver
   template:
     metadata:
-      annotations:
-        sidecar-injector.cyberark.com/conjurAuthConfig: conjur
-        sidecar-injector.cyberark.com/conjurConnConfig: conjur
-        sidecar-injector.cyberark.com/containerMode: sidecar
-        sidecar-injector.cyberark.com/inject: "yes"
-        sidecar-injector.cyberark.com/injectType: authenticator
       labels:
         app: appserver
     spec:
@@ -70,6 +64,40 @@ spec:
           - mountPath: /run/conjur
             name: conjur-access-token
             readOnly: true
+      - image: {{ AUTHENTICATOR_CLIENT_IMAGE }}
+        imagePullPolicy: {{ IMAGE_PULL_POLICY }}
+        name: authenticator
+        env:
+          - name: CONJUR_VERSION
+            value: '{{ CONJUR_VERSION }}'
+          - name: CONTAINER_MODE
+            value: sidecar
+          - name: MY_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: MY_POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: CONJUR_AUTHN_URL
+            value: "{{ CONJUR_AUTHN_URL }}"
+          - name: CONJUR_ACCOUNT
+            value: {{ CONJUR_ACCOUNT }}
+          - name: CONJUR_AUTHN_LOGIN
+            value: "{{ CONJUR_AUTHN_LOGIN_PREFIX }}/k8s-appserver"
+          - name: CONJUR_SSL_CERTIFICATE
+            valueFrom:
+              configMapKeyRef:
+                name: {{ CONFIG_MAP_NAME }}
+                key: ssl-certificate
+        volumeMounts:
+          - mountPath: /run/conjur
+            name: conjur-access-token
       imagePullSecrets:
         - name: dockerpullsecret
       volumes:

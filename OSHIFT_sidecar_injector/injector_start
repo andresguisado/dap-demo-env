@@ -11,18 +11,10 @@ LABEL=cyberark-sidecar-injector
 # create namespace for injectors
 kubectl create namespace $NAMESPACE
 
-docker exec -it $CLI_CONTAINER_NAME \
-	conjur variable value mutual-tls/server/cert >  $TMPDIR/server-cert.pem
-
-docker exec -it $CLI_CONTAINER_NAME \
-	conjur variable value mutual-tls/server/private-key > $TMPDIR/server-key.pem
-
-# create the secret with CA cert and server cert/key
-kubectl create secret generic $LABEL \
-        --from-file=key.pem=$TMPDIR/server-key.pem \
-        --from-file=cert.pem=$TMPDIR/server-cert.pem \
-        --dry-run -o yaml |
-    kubectl -n $NAMESPACE apply -f -
+./deployment/webhook-create-signed-cert.sh \
+    --service $LABEL \
+    --secret $LABEL \
+    --namespace $NAMESPACE
 
 # Patch the MutatingWebhookConfiguration - set caBundle cluster value
 cat deployment/mutatingwebhook.yaml |    	\

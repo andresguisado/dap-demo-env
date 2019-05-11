@@ -1,11 +1,9 @@
 #!/bin/bash
 
-source ./aws.config
+source ./demo.config
 
 # Authenticates as admin user and sets value of a specified variable
 
-AUTHN_USERNAME=admin
-AUTHN_PASSWORD=$CONJUR_ADMIN_PASSWORD
 AUTHN_TOKEN=""
 
 ################  MAIN   ################
