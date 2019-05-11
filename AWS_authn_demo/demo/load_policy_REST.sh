@@ -46,11 +46,12 @@ main() {
   #     EXPLICITLY specified in the new policy file WILL BE DELETED. It is
   #     potentially very destructive and should be used with caution.
 
+  echo
   curl -sk \
      -H "Content-Type: application/json" \
      -H "Authorization: Token token=\"$AUTHN_TOKEN\"" \
      -X POST -d "$(< $policy_file)" \
-     $CONJUR_APPLIANCE_URL/policies/$CONJUR_ACCOUNT/policy/$policy_branch
+     $CONJUR_APPLIANCE_URL/policies/$CONJUR_ACCOUNT/policy/$policy_branch | jq .
   echo
 }
 
@@ -58,6 +59,15 @@ main() {
 # AUTHN USER - sets AUTHN_TOKEN globally
 # - no arguments
 authn_user() {
+  if [[ "$AUTHN_USERNAME" == "" ]]; then
+   printf "\nEnter admin user name: "
+   read admin_uname
+   printf "Enter the admin password (it will not be echoed): "
+   read -s admin_pwd
+   export AUTHN_USERNAME=$admin_uname
+   export AUTHN_PASSWORD=$admin_pwd
+  fi
+
   # Login user, authenticate and get API key for session
   local api_key=$(curl \
                     -sk \

@@ -5,6 +5,11 @@
 
 source ./aws.config
 
+if [[ "$(cat /etc/os-release | grep 'Ubuntu 18.04.2 LTS')" == "" ]]; then
+  echo "These installation scripts assume Ubuntu 18.04"
+  exit -1
+fi
+
 main() {
   mount_image_volume
   install_docker

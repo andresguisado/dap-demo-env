@@ -5,9 +5,15 @@
 
 source ./demo.config
 
+if [[ "$(cat /etc/os-release | grep 'Ubuntu 18.04.2 LTS')" == "" ]]; then
+  echo "These installation scripts assume Ubuntu 18.04"
+  exit -1
+fi
+
 main() {
   ruby_setup
   install_summon
+  install_jq
   load_policies
 }
 
@@ -29,6 +35,10 @@ install_summon() {
     && sudo mv summon /usr/local/bin/ \
     && rm summon-linux-amd64.tar.gz
   popd
+}
+
+install_jq() {
+  sudo snap install jq
 }
 
 load_policies() {

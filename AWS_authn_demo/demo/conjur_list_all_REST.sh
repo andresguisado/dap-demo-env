@@ -2,21 +2,12 @@
 
 source ./demo.config
 
-# Authenticates as admin user and sets value of a specified variable
+# Authenticates as admin user and lists all resources
 
 AUTHN_TOKEN=""
 
 ################  MAIN   ################
-# $1 - name of variable
-# $2 - value to assign
 main() {
-
-  if [[ $# -ne 2 ]] ; then
-    printf "\nUsage: %s <variable-name> <variable-value>\n" $0
-    exit -1
-  fi
-  local variable_name=$1
-  local variable_value=$2
 
   authn_user   # authenticate user
   if [[ "$AUTHN_TOKEN" == "" ]]; then
@@ -30,8 +21,7 @@ main() {
   curl -sk \
 	-H "Content-Type: application/json" \
 	-H "Authorization: Token token=\"$AUTHN_TOKEN\"" \
-     --data "$variable_value" \
-     $CONJUR_APPLIANCE_URL/secrets/$CONJUR_ACCOUNT/variable/$variable_name
+     $CONJUR_APPLIANCE_URL/resources/$CONJUR_ACCOUNT | jq .[].id
 }
 
 ##################
