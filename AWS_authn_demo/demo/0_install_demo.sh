@@ -10,6 +10,11 @@ if [[ "$(cat /etc/os-release | grep 'Ubuntu 18.04.2 LTS')" == "" ]]; then
   exit -1
 fi
 
+if [[ "$CONJUR_MASTER_HOSTNAME" == "" ]]; then
+  echo "Please edit demo.config and set CONJUR_MASTER_HOSTNAME to the Public DNS hostname of the Conjur Master."
+  exit -1
+fi
+
 main() {
   ruby_setup
   install_summon

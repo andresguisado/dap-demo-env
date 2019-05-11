@@ -10,6 +10,11 @@ DEMO_DIR=./demo
 # sync local & remote config files 
 source $SETUP_DIR/aws.config
 
+if [[ "$AWS_PUB_DNS" == "" ]]; then
+  echo "Please edit $SETUP_DIR/aws.config and set AWS_PUB_DNS to DNS name of Conjur host."
+  exit -1
+fi
+
 # EITHER copy over appliance tarfile...
 # Location of local Conjur appliance tarfile to copy to AWS
 #CONJUR_TARFILE_SOURCE_DIR=~/conjur-install-images
