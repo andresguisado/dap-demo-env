@@ -1,6 +1,7 @@
 $initScript = <<SCRIPT
 yum update -y
 yum install epel-release -y
+git clone https://github.com/jodyhuntatx/dap-demo-env.git
 SCRIPT
 
 Vagrant.configure("2") do |config|
