@@ -1,6 +1,7 @@
 $initScript = <<SCRIPT
 yum update -y
-yum install epel-release git -y
+yum install epel-release -y
+yum install git -y
 git clone https://github.com/jodyhuntatx/dap-demo-env.git
 SCRIPT
 
