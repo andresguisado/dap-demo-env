@@ -43,8 +43,7 @@ else
   minishift start --memory "$MINISHIFT_VM_MEMORY" \
                   --vm-driver virtualbox \
                   --show-libmachine-logs \
-                  --openshift-version "$OPENSHIFT_VERSION" \
-		  --remote-ipaddress 192.168.99.102
+                  --openshift-version "$OPENSHIFT_VERSION"
 
   # minikube also wants to use .kube, the default for KUBECONFIG
   # copy contents of .kube to $KUBECONFIGDIR set KUBECONFIG to point there
