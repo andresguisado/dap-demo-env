@@ -1,0 +1,68 @@
+#!/bin/bash
+
+set -e
+
+usage() {
+    cat <<EOF >&2
+Generate MutatingWebhookConfiguration for CyberArk sidecar injector webhook service.
+
+This script uses generates a MutatingWebhookConfiguration using the provided service name of the webhook and the namespace where the webhook service resides.
+
+usage: ${0} [OPTIONS]
+
+The following flags are required.
+
+       --service                         Service name of webhook.
+       --namespace                       Namespace where webhook service resides.
+       --namespace-selector-label        Label which should be set to "enabled" for namespace to use Sidecar Injector.
+EOF
+    exit 1
+}
+
+while [[ $# -gt 0 ]]; do
+    case ${1} in
+        --namespace-selector-label)
+            namespaceSelectorLabel="$2"
+            shift
+            ;;
+        --service)
+            service="$2"
+            shift
+            ;;
+        --namespace)
+            namespace="$2"
+            shift
+            ;;
+        *)
+            usage
+            ;;
+    esac
+    shift
+done
+
+if [ -z ${service} ] || [ -z ${namespace} ] || [ -z ${namespaceSelectorLabel} ]
+then
+    usage
+fi
+
+ROOT=$(cd $(dirname $0)/../../; pwd)
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+export CA_BUNDLE=$(kubectl get configmap -n kube-system extension-apiserver-authentication -o=jsonpath='{.data.client-ca-file}' | base64 | tr -d '\n')
+
+export namespaceSelectorLabel
+export namespace
+export service
+
+if command -v envsubst >/dev/null 2>&1; then
+    envsubst
+else
+    sed \
+        -e "s|\${CA_BUNDLE}|${CA_BUNDLE}|g" \
+        -e "s|\${namespaceSelectorLabel}|${namespaceSelectorLabel}|g" \
+        -e "s|\${namespace}|${namespace}|g" \
+        -e "s|\${service}|${service}|g"
+fi

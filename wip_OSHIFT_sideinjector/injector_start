@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash 
 # Manual deployment steps from:
 # https://github.com/cyberark/sidecar-injector#installing-the-sidecar-injector-manually
 
@@ -6,7 +6,7 @@ NAMESPACE=injectors
 TMPDIR=/tmp
 LABEL=cyberark-sidecar-injector
 
-./stop
+./injector_stop
 
 # create namespace for injectors
 kubectl create namespace $NAMESPACE

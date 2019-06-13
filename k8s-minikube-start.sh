@@ -6,6 +6,9 @@ if [[ $PLATFORM != kubernetes ]]; then
   exit -1
 fi
 
+# Minikube LOGLEVEL: 0=Debug, 5=Fatal
+LOGLEVEL=0
+
 case $1 in
   stop )
 	minikube stop
@@ -39,11 +42,11 @@ else
   vboxmanage snapshot minikube list
   minikube start --memory "$MINIKUBE_VM_MEMORY" \
                   --vm-driver virtualbox \
-                  --kubernetes-version "$KUBERNETES_VERSION"
- 
-#		  --extra-config=apiserver.admission-control="MutatingAdmissionWebhook" \
-#		  --extra-config=controller-manager.ClusterSigningCertFile="/var/lib/localkube/certs/ca.crt" \
-#		  --extra-config=controller-manager.ClusterSigningKeyFile="/var/lib/localkube/certs/ca.key"
+		  --loglevel $LOGLEVEL \
+                  --kubernetes-version "$KUBERNETES_VERSION" \
+		  --extra-config=apiserver.admission-control="ServiceAccount,MutatingAdmissionWebhook" \
+		  --extra-config=controller-manager.ClusterSigningCertFile="/var/lib/localkube/certs/ca.crt" \
+		  --extra-config=controller-manager.ClusterSigningKeyFile="/var/lib/localkube/certs/ca.key"
 
   if [[ ! -d $KUBECONFIGDIR ]]; then
     mkdir $KUBECONFIGDIR
@@ -60,6 +63,9 @@ kubectl patch node minikube -p '{"spec":{"taints":[]}}'
 
 # delete Exited containers
 docker rm $(docker container ls -a | grep Exited | awk '{print $1}') > /dev/null
+
+# install ntpdate in minikube VM and sync its clock
+echo "sudo yum install -y ntpdate; sudo ntpdate pool.ntp.org" | minikube ssh
 
 echo "Waiting for minikube to finish starting..."
 minikube status

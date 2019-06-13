@@ -29,6 +29,8 @@ main() {
   # Generate private key for $HOST_LOGIN and certificate signing request (CSR)
   $(openssl genrsa -out ./temp.key 2048)
   key=$(cat ./temp.key)
+
+  # Store key as Conjur variable
   curl -s --data-binary "$key" \
      --cacert "$CONJUR_CERT_FILE" \
      -H "Authorization: Token token=\"$auth_token\"" \

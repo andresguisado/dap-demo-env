@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: appserver
+  labels:
+    app: appserver
+spec:
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+  selector:
+    app: appserver
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: k8s-appserver
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: appserver
+  name: appserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: appserver
+  template:
+    metadata:
+      annotations:
+        sidecar-injector.cyberark.com/conjurAuthConfig: conjur
+        sidecar-injector.cyberark.com/conjurConnConfig: conjur
+        sidecar-injector.cyberark.com/containerMode: sidecar
+        sidecar-injector.cyberark.com/inject: "yes"
+        sidecar-injector.cyberark.com/injectType: authenticator
+        sidecar-injector.cyberark.com/containerName: secretless
+      labels:
+        app: appserver
+    spec:
+      serviceAccountName: k8s-appserver
+      containers:
+      - image: {{ TEST_APP_DOCKER_IMAGE }}
+        imagePullPolicy: {{ IMAGE_PULL_POLICY }}
+        name: test-app
+        ports:
+        - containerPort: 8080
+        env:
+          - name: CONJUR_VERSION
+            value: '{{ CONJUR_VERSION }}'
+          - name: CONJUR_APPLIANCE_URL
+            value: "{{ CONJUR_APPLIANCE_URL }}"
+          - name: CONJUR_ACCOUNT
+            value: {{ CONJUR_ACCOUNT }}
+          - name: CONJUR_AUTHN_TOKEN_FILE
+            value: /run/conjur/access-token
+          - name: CONJUR_SSL_CERTIFICATE
+            valueFrom:
+              configMapKeyRef:
+                name: {{ CONFIG_MAP_NAME }}
+                key: ssl-certificate
+          - name: K8S-SECRET
+            valueFrom:
+              secretKeyRef:
+                name: test-app-secret
+                key: secret-key
+        volumeMounts:
+          - mountPath: /run/conjur
+            name: conjur-access-token
+            readOnly: true
+      imagePullSecrets:
+        - name: dockerpullsecret
+      volumes:
+        - name: conjur-access-token
+          emptyDir:
+            medium: Memory

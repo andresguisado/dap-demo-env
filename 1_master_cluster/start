@@ -9,4 +9,6 @@ if [[ $CONJUR_SIMPLE_CLUSTER == true ]]; then
 else
   ./2_deploy_master_cluster.sh
 fi
-./3_print_config.sh
+./3_init_follower_authn.sh
+./4_deploy_follower.sh
+./5_print_config.sh

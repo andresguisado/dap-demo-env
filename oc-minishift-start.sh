@@ -37,11 +37,14 @@ if [[ "$(minishift status | grep Running)" != "" ]]; then
   exit 0
 else
   echo "VM snapshots available. Stop & restore before starting:"
+  set +e
   vboxmanage snapshot minishift list
+  set -e
   minishift start --memory "$MINISHIFT_VM_MEMORY" \
                   --vm-driver virtualbox \
                   --show-libmachine-logs \
-                  --openshift-version "$OPENSHIFT_VERSION" 
+                  --openshift-version "$OPENSHIFT_VERSION" \
+		  --remote-ipaddress 192.168.99.102
 
   # minikube also wants to use .kube, the default for KUBECONFIG
   # copy contents of .kube to $KUBECONFIGDIR set KUBECONFIG to point there
@@ -56,6 +59,9 @@ eval $(minishift docker-env)
 
 # clean up exited containers
 docker rm $(docker container ls -a | grep Exited | awk '{print $1}')
+
+# install ntpdate in minishift VM and sync its clock
+echo "sudo yum install -y ntpdate; sudo ntpdate pool.ntp.org" | minishift ssh
 
 # if CLI container is already running, update /etc/hosts and start scope
 if [[ ("$(docker ps | grep $CLI_CONTAINER_NAME)" != "") ]]; then

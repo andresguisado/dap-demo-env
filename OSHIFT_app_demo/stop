@@ -3,6 +3,10 @@ set -eo pipefail
 
 . utils.sh
 
+if [ $PLATFORM = 'openshift' ]; then
+  oc login -u $OSHIFT_CLUSTER_ADMIN_USERNAME
+fi
+
 if ! has_namespace $TEST_APP_NAMESPACE_NAME; then
   exit 0
 fi
@@ -16,9 +20,8 @@ if [ $PLATFORM = 'kubernetes' ]; then
     kubectl delete --ignore-not-found secret dockerpullsecret
   fi
 elif [ $PLATFORM = 'openshift' ]; then
-  oc login -u $OSHIFT_CLUSTER_ADMIN_USERNAME
-  $cli delete --ignore-not-found secrets test-app-secret
-  $cli delete --ignore-not-found secrets dockerpullsecret
+  oc delete --ignore-not-found secrets test-app-secret
+  oc delete --ignore-not-found secrets dockerpullsecret
 fi
 
 announce "Deleting test app/sidecar deployment."

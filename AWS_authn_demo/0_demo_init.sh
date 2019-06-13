@@ -18,8 +18,9 @@ fi
 # EITHER copy over appliance tarfile...
 # Location of local Conjur appliance tarfile to copy to AWS
 #CONJUR_TARFILE_SOURCE_DIR=~/conjur-install-images
+#echo "mkdir $IMAGE_DIR" | ssh -i $AWS_SSH_KEY ubuntu@$AWS_PUB_DNS
 #scp -i $AWS_SSH_KEY \
-#	$CONJUR_TARFILE_DIR/$CONJUR_APPLIANCE_IMAGE_FILE \
+#	$CONJUR_TARFILE_SOURCE_DIR/$CONJUR_APPLIANCE_IMAGE_FILE \
 #	ubuntu@$AWS_PUB_DNS:$IMAGE_DIR
 # OR mount snapshotted volume w/ image on it
 

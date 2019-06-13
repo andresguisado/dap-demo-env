@@ -1,0 +1,32 @@
+#!/bin/bash -x
+# Manual deployment steps from:
+# https://github.com/cyberark/sidecar-injector#installing-the-sidecar-injector-manually
+set -e
+
+export NAMESPACE=test-injectors
+TMPDIR=/tmp
+LABEL=cyberark-sidecar-injector
+
+./injector_stop
+
+# create namespace for injectors
+kubectl create namespace $NAMESPACE
+
+# create the secret with CA cert and server cert/key
+./deployment/webhook-create-signed-cert.sh \
+    --service "${LABEL}" \
+    --secret "${LABEL}" \
+    --namespace "${NAMESPACE}"
+
+# Patch the MutatingWebhookConfiguration - set caBundle cluster value
+cat deployment/mutatingwebhook.yaml | \
+  deployment/webhook-patch-ca-bundle.sh \
+   --namespace-selector-label "${LABEL}" \
+   --service "$LABEL" \
+   --namespace "$NAMESPACE" > \
+   deployment/mutatingwebhook-ca-bundle.yaml
+
+kubectl -n "${NAMESPACE}" apply -f deployment/deployment.yaml
+kubectl -n "${NAMESPACE}" apply -f deployment/service.yaml
+kubectl -n "${NAMESPACE}" apply -f deployment/mutatingwebhook-ca-bundle.yaml
+kubectl -n "${NAMESPACE}" get pods

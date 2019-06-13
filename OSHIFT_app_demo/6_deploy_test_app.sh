@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 set -eo pipefail
 
 . utils.sh
@@ -17,7 +17,7 @@ main() {
   fi
 
   create_k8s_secrets
-  initialize_injector
+#  initialize_injector
   deploy_sidecar_app
   deploy_init_container_app
   sleep 15  # allow time for containers to initialize

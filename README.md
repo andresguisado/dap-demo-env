@@ -11,7 +11,7 @@
  - oc-minishift-start.sh - start, stops & reinitialized minishift env
  - k8s-minikube-start.sh - start, stops & reinitialized minikube env
  - 0_load_images - utility for bulk image loading from tarfiles
- - bring_up.sh - starts up demos once minishift/kube are running
+ - start_stop_all.sh - starts up demos once minishift/kube are running
 
 ## Demo directories
  - 1_master_cluster - starts master & cli in minishift/kube docker daemon

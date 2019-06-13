@@ -9,7 +9,6 @@ main() {
   shared_volumes_up
   master_up
   cli_up
-#  follower_up
   echo
 }
 
@@ -100,28 +99,6 @@ wait_till_master_is_responsive() {
     master_is_healthy=$(docker exec -it conjur-cli curl -k $CONJUR_APPLIANCE_URL/health | grep "ok" | tail -1 | grep "true")
   done
   set -e
-}
-
-############################
-follower_up() {
-  echo "-----"
-  announce "Initializing Conjur Follower"
-  docker run -d \
-    --name conjur_follower \
-    --label role=conjur_node \
-    -p "$CONJUR_FOLLOWER_PORT:443" \
-    --restart always \
-    --security-opt seccomp:unconfined \
-    $CONJUR_APPLIANCE_IMAGE
-
-  if [[ $NO_DNS ]]; then
-    # add entry to follower's /etc/hosts so $CONJUR_MASTER_HOST_NAME resolves
-    docker exec -it conjur_follower bash -c "echo \"$CONJUR_MASTER_HOST_IP    $CONJUR_MASTER_HOST_NAME\" >> /etc/hosts"
-  fi
-
-  docker cp ../etc/follower-seed.tar conjur_follower:/tmp/follower-seed.tar
-  docker exec conjur_follower evoke unpack seed /tmp/follower-seed.tar
-  docker exec conjur_follower evoke configure follower -p $CONJUR_MASTER_PORT
 }
 
 main $@
