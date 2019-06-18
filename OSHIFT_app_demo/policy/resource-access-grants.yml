@@ -13,7 +13,9 @@
   roles:
   - !layer cust-portal/appservers
   resources:
-  - !variable DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/username
-  - !variable DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/password
   - !variable k8s-secrets/db-username
   - !variable k8s-secrets/db-password
+
+- !grant
+  role: !group DemoVault/CICD/CICD_Secrets/delegation/consumers
+  member: !layer cust-portal/appservers
