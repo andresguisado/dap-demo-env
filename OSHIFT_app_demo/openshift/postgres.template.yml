@@ -1,0 +1,56 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: test-app-secretless-backend
+  namespace: {{ TEST_APP_NAMESPACE_NAME }}
+spec:
+  selector:
+    app: test-app-secretless-backend
+  ports:
+    - port: 5432
+      targetPort: 5432
+
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: postgres-db
+  labels:
+    app: test-app-secretless-backend
+spec:
+  serviceName: test-app-secretless-backend
+  selector:
+    matchLabels:
+      app: test-app-secretless-backend
+  template:
+    metadata:
+      labels:
+        app: test-app-secretless-backend
+    spec:
+      containers:
+      - name: test-app-secretless-backend
+        image: centos/postgresql-95-centos7
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 5432
+        env:
+          - name: POSTGRESQL_USER
+            value: test_app
+          - name: POSTGRESQL_PASSWORD
+            value: {{ TEST_APP_DB_PASSWORD }}
+          - name: POSTGRESQL_DATABASE
+            value: test_app
+        volumeMounts:
+        - name: backend-certs
+          mountPath: "/etc/certs/"
+          readOnly: true
+        command: ["/bin/sh", "-c"]
+        args:
+          - mkdir -p /opt/app-root/certs/;
+            install -m 0600 /etc/certs/* /opt/app-root/certs;
+            run-postgresql -c ssl=on -c ssl_cert_file=/opt/app-root/certs/server.crt -c ssl_key_file=/opt/app-root/certs/server.key
+      volumes:
+      - name: backend-certs
+        secret:
+          secretName: test-app-backend-certs

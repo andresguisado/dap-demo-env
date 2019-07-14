@@ -1,0 +1,55 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: test-app-secretless-backend
+  namespace: {{ TEST_APP_NAMESPACE_NAME }}
+spec:
+  selector:
+    app: test-app-secretless-backend
+  ports:
+    - port: 5432
+      targetPort: 5432
+
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: postgres-db
+  labels:
+    app: test-app-secretless-backend
+spec:
+  serviceName: test-app-secretless-backend
+  selector:
+    matchLabels:
+      app: test-app-secretless-backend
+  template:
+    metadata:
+      labels:
+        app: test-app-secretless-backend
+    spec:
+      securityContext:
+        fsGroup: 999
+      containers:
+      - name: test-app-secretless-backend
+        imagePullPolicy: {{ IMAGE_PULL_POLICY }}
+        image: {{ TEST_APP_PG_DOCKER_IMAGE }}
+        ports:
+          - containerPort: 5432
+        volumeMounts:
+          - name: backend-certs
+            mountPath: "/etc/certs/"
+            readOnly: true
+        args: ["-c", "ssl=on", "-c", "ssl_cert_file=/etc/certs/server.crt", "-c", "ssl_key_file=/etc/certs/server.key"]
+        env:
+          - name: POSTGRES_USER
+            value: test_app
+          - name: POSTGRES_PASSWORD
+            value: {{ TEST_APP_DB_PASSWORD }}
+          - name: POSTGRES_DB
+            value: test_app
+      volumes:
+        - name: backend-certs
+          secret:
+            secretName: test-app-backend-certs
+            defaultMode: 384

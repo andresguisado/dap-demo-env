@@ -37,8 +37,8 @@ configure_follower() {
   fi
 
   # copy modified configuration recipe and nginx patch script into node
-  copy_file_to_container "./configure.rb.5.3.1" "/opt/conjur/evoke/chef/cookbooks/conjur/recipes/configure.rb" "$pod_name"
-  copy_file_to_container "./patch_nginx.sh" "/opt/conjur/evoke/bin" "$pod_name"
+#  copy_file_to_container "./configure.rb.5.3.1" "/opt/conjur/evoke/chef/cookbooks/conjur/recipes/configure.rb" "$pod_name"
+#  copy_file_to_container "./patch_nginx.sh" "/opt/conjur/evoke/bin" "$pod_name"
 
   $cli exec $pod_name -- evoke configure follower -p $CONJUR_MASTER_PORT
 

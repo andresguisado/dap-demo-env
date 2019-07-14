@@ -1,5 +1,7 @@
 ---
-# Grant application layers access to secrets
+
+##################
+# Grant application layers access to k8s-secrets
 - !permit
   privileges: [ read, execute ]
   roles:
@@ -16,6 +18,27 @@
   - !variable k8s-secrets/db-username
   - !variable k8s-secrets/db-password
 
+##################
+# Grant CICD_Secrets consumer role to appservers
 - !grant
   role: !group DemoVault/CICD/CICD_Secrets/delegation/consumers
   member: !layer {{ TEST_APP_NAMESPACE_NAME }}/appservers
+
+##################
+# Define variables for secretless DB access
+- !policy
+  id: test-app-secretless-db
+  annotations:
+    description: This policy contains the creds to access the secretless app DB
+
+  body:
+    - &secretless-variables
+      - !variable address
+      - !variable username
+      - !variable password
+      - !variable sslmode
+
+    - !permit
+      role: !layer /{{ TEST_APP_NAMESPACE_NAME }}/secretless
+      privileges: [ read, execute ]
+      resources: *secretless-variables

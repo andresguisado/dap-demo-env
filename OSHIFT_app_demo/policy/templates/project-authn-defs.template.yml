@@ -11,6 +11,16 @@
 
   - &service_accounts
     - !host
+      id: {{ TEST_APP_NAMESPACE_NAME }}/service_account/ocp-secretless-broker
+      annotations:
+        kubernetes/authentication-container-name: secretless
+        openshift: "true"
+    - !host
+      id: {{ TEST_APP_NAMESPACE_NAME }}/service_account/k8s-secretless-broker
+      annotations:
+        kubernetes/authentication-container-name: secretless
+        kubernetes: "true"
+    - !host
       id: {{ TEST_APP_NAMESPACE_NAME }}/service_account/k8s-webserver
       annotations:
         kubernetes/authentication-container-name: authenticator
@@ -31,7 +41,9 @@
         kubernetes/authentication-container-name: authenticator
         openshift: "true"
 
-  # Grant service account role w/ permission to authenticate
+  # Grant cluster apps role to service accounts to enable authentication
+  # - layer is: conjur/authn-k8s/<authn-id>/apps
+  # - authenticate privilege is granted to layer in cluster-authn-defs.yml
   - !grant
     role: !layer
     member: *service_accounts

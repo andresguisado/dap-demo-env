@@ -6,6 +6,7 @@ elif [ $PLATFORM = 'openshift' ]; then
     cli=oc
 fi
 
+######################
 check_env_var() {
   var_name=$1
 
@@ -20,6 +21,7 @@ check_env_var() {
   set -u
 }
 
+######################
 announce() {
   echo "++++++++++++++++++++++++++++++++++++++"
   echo ""
@@ -28,6 +30,7 @@ announce() {
   echo "++++++++++++++++++++++++++++++++++++++"
 }
 
+######################
 platform_image() {
   if [ $PLATFORM = "openshift" ]; then
     echo "$DOCKER_REGISTRY_PATH/$TEST_APP_NAMESPACE_NAME/$1:$TEST_APP_NAMESPACE_NAME"
@@ -38,6 +41,7 @@ platform_image() {
   fi
 }
 
+######################
 has_namespace() {
   if $cli get namespace  "$1" > /dev/null; then
     true
@@ -46,6 +50,7 @@ has_namespace() {
   fi
 }
 
+######################
 docker_tag_and_push() {
   if [ $PLATFORM = "kubernetes" ]; then
     docker_tag="$DOCKER_REGISTRY_PATH/$1:$CONJUR_NAMESPACE_NAME"
@@ -57,16 +62,19 @@ docker_tag_and_push() {
   docker push $docker_tag
 }
 
+######################
 get_master_pod_name() {
   pod_list=$($cli get pods -l app=conjur-node,role=master --no-headers | awk '{ print $1 }')
   echo $pod_list | awk '{print $1}'
 }
 
+######################
 get_conjur_cli_pod_name() {
   pod_list=$($cli get pods -l app=conjur-cli --no-headers | awk '{ print $1 }')
   echo $pod_list | awk '{print $1}'
 }
 
+######################
 run_conjur_cmd_as_admin() {
   local command=$(cat $@)
 
@@ -79,6 +87,7 @@ run_conjur_cmd_as_admin() {
   echo "$output"
 }
 
+######################
 set_namespace() {
   if [[ $# != 1 ]]; then
     printf "Error in %s/%s - expecting 1 arg.\n" $(pwd) $0
@@ -88,6 +97,7 @@ set_namespace() {
   $cli config set-context $($cli config current-context) --namespace="$1" > /dev/null
 }
 
+######################
 load_policy() {
   local POLICY_FILE=$1
 
@@ -96,6 +106,7 @@ conjur policy load --as-group security_admin "policy/$POLICY_FILE"
 CMD
 }
 
+######################
 rotate_host_api_key() {
   local host=$1
 
@@ -104,6 +115,25 @@ conjur host rotate_api_key -h $host
 CMD
 }
 
+######################
+wait_for_running_pod() {
+  local pod_name=$1; shift
+  # until there's at least one pod with that substring in its name that's Running
+  until [ "" != "$($cli get pods --no-headers | grep $pod_name | grep Running)" ]; do
+    echo -n '.'
+    sleep 2
+  done
+  echo
+}
+
+######################
+function pods_ready() {
+  local app_label=$1
+
+  $cli describe pod --selector "app=$app_label" | awk '/Ready/{if ($2 != "True") exit 1}'
+}
+
+######################
 function wait_for_it() {
   local timeout=$1
   local spacer=2
@@ -131,13 +161,29 @@ function wait_for_it() {
   fi
 }
 
+######################
+ensure_env_database() {
+  local valid_dbs=(
+  'postgres'
+  'mysql'
+  )
+
+  if ! printf '%s\n' "${valid_dbs[@]}" | grep -Fxq "${TEST_APP_DATABASE}"; then
+    echo "Got '${TEST_APP_DATABASE}', expected TEST_APP_DATABASE to be one of:";
+    printf "'%s'\n" "${valid_dbs[@]}";
+    exit 1
+  fi
+}
+
+######################
 function is_minienv() {
   $MINIKUBE
 }
 
+######################
 function service_ip() {
   local service=$1
 
-  echo "$($cli describe service $service | grep 'LoadBalancer Ingress' |
-    awk '{ print $3 }')"
+  echo "$($cli describe service $service | grep 'Endpoints:' |
+    awk '{ print $2 }')"
 }

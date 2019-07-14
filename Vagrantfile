@@ -12,7 +12,7 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", inline: $initScript
 
   config.vm.provider "virtualbox" do |vb|
-    vb.memory = "8192"
-    vb.cpus = "2"
+    vb.memory = "1024"
+    vb.cpus = "1"
   end
 end

@@ -1,7 +1,7 @@
 ---
 # This policy defines a layer of whitelisted identities permitted to authenticate to the authn-k8s endpoint.
 - !policy
-  id: conjur/authn-k8s/cle/apps
+  id: conjur/authn-k8s/demo-cluster/apps
   annotations:
     description: Identities permitted to authenticate 
   body:
@@ -10,6 +10,16 @@
       description: Identities permitted to authenticate
 
   - &service_accounts
+    - !host
+      id: cust-portal/service_account/ocp-secretless-broker
+      annotations:
+        kubernetes/authentication-container-name: secretless
+        openshift: "true"
+    - !host
+      id: cust-portal/service_account/k8s-secretless-broker
+      annotations:
+        kubernetes/authentication-container-name: secretless
+        kubernetes: "true"
     - !host
       id: cust-portal/service_account/k8s-webserver
       annotations:
@@ -31,7 +41,9 @@
         kubernetes/authentication-container-name: authenticator
         openshift: "true"
 
-  # Grant service account role w/ permission to authenticate
+  # Grant cluster apps role to service accounts to enable authentication
+  # - layer is: conjur/authn-k8s/<authn-id>/apps
+  # - authenticate privilege is granted to layer in cluster-authn-defs.yml
   - !grant
     role: !layer
     member: *service_accounts

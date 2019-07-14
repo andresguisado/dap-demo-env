@@ -1,2 +1,0 @@
-CREATE USER test_app PASSWORD '3b5f6e852b09b753f1e45178';
-GRANT ALL ON SCHEMA public to test_app;

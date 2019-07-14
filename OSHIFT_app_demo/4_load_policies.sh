@@ -51,3 +51,23 @@ docker exec conjur-cli conjur variable values add k8s-secrets/app-username the-a
 docker exec conjur-cli conjur variable values add k8s-secrets/app-apikey $(openssl rand -hex 12)
 
 echo "Conjur policies loaded."
+
+# Create the random database password
+password=$(openssl rand -hex 12)
+
+# Set DB password in Kubernetes manifests
+# NOTE: generated files are prefixed with the test app namespace to allow for parallel CI
+
+pushd kubernetes
+  sed "s#{{ TEST_APP_DB_PASSWORD }}#$password#g" ./postgres.template.yml > ./tmp.${TEST_APP_NAMESPACE_NAME}.postgres.yml
+  sed "s#{{ TEST_APP_DB_PASSWORD }}#$password#g" ./mysql.template.yml > ./tmp.${TEST_APP_NAMESPACE_NAME}.mysql.yml
+popd
+
+# Set DB password in OC manifests
+# NOTE: generated files are prefixed with the test app namespace to allow for parallel CI
+pushd openshift
+  sed "s#{{ TEST_APP_DB_PASSWORD }}#$password#g" ./postgres.template.yml > ./tmp.${TEST_APP_NAMESPACE_NAME}.postgres.yml
+  sed "s#{{ TEST_APP_DB_PASSWORD }}#$password#g" ./mysql.template.yml > ./tmp.${TEST_APP_NAMESPACE_NAME}.mysql.yml
+popd
+
+announce "Added DB password value: $password"

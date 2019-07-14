@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-. utils.sh
+source ./utils.sh
 
 if [ $PLATFORM = 'openshift' ]; then
     docker login -u _ -p $(oc whoami -t) $DOCKER_REGISTRY_PATH
@@ -9,26 +9,34 @@ fi
 
 announce "Building and pushing test app images."
 
-authenticator_client_image=$(platform_image conjur-authn-k8s-client)
-docker tag $AUTHENTICATOR_CLIENT_IMAGE $authenticator_client_image
+# Tag images with cluster registry & namespace and push (unless minikube)
+authenticator_client_tag=$(platform_image conjur-authn-k8s-client)
+docker tag $AUTHENTICATOR_CLIENT_IMAGE $authenticator_client_tag
 if ! is_minienv; then
-  docker push $authenticator_client_image
+  docker push $authenticator_client_tag
+fi
+
+secretless_broker_tag=$(platform_image secretless-broker)
+docker tag $SECRETLESS_BROKER_IMAGE $secretless_broker_tag
+if ! is_minienv; then
+  docker push $secretless_broker_tag
 fi
 
 readonly APPS=(
-  "init"
-  "sidecar"
+  "appserver"
+  "webserver"
+  "secretless"
+  "pgsql"
 )
 
-pushd webapp
+for app_type in "${APPS[@]}"; do
+  pushd ./build/$app_type
     ./build.sh
 
-    for app_type in "${APPS[@]}"; do
-      test_app_image=$(platform_image "test-$app_type-app")
-      docker tag test-app:latest $test_app_image
-      if ! is_minienv; then
-        docker push $test_app_image
-      fi
-    done
-popd
-
+    test_app_image=$(platform_image "$app_type")
+    docker tag $app_type:latest $test_app_image
+    if ! is_minienv; then
+      docker push $test_app_image
+    fi
+  popd
+done

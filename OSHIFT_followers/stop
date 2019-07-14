@@ -24,6 +24,7 @@ sed -e "s#{{ CONJUR_APPLIANCE_IMAGE }}#$conjur_appliance_image#g" "./$PLATFORM/c
 
 if [ $PLATFORM == openshift ]; then
   $cli delete --ignore-not-found deploymentconfig conjur-cluster
+  $cli delete --ignore-not-found route conjur-follower
 fi
 
 echo "Waiting for Conjur pods to terminate..."

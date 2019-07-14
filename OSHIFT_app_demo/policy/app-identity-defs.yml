@@ -6,16 +6,24 @@
   body:
   - !layer webservers
   - !layer appservers
+  - !layer secretless
 
-  # add grant app roles to service accounts
-  - !grant
-    role: !layer webservers
-    members:
-    - !host /conjur/authn-k8s/cle/apps/cust-portal/service_account/k8s-webserver
-    - !host /conjur/authn-k8s/cle/apps/cust-portal/service_account/ocp-webserver
+# add authn identity layer to application layer so authn role inherits app's permissions
+- !grant
+  role: !layer cust-portal/webservers
+  members:
+  - !host /conjur/authn-k8s/demo-cluster/apps/cust-portal/service_account/ocp-webserver
+  - !host /conjur/authn-k8s/demo-cluster/apps/cust-portal/service_account/k8s-webserver
 
-  - !grant
-    role: !layer appservers
-    members:
-    - !host /conjur/authn-k8s/cle/apps/cust-portal/service_account/k8s-appserver
-    - !host /conjur/authn-k8s/cle/apps/cust-portal/service_account/ocp-appserver
+- !grant
+  role: !layer cust-portal/appservers
+  members:
+  - !host /conjur/authn-k8s/demo-cluster/apps/cust-portal/service_account/ocp-appserver
+  - !host /conjur/authn-k8s/demo-cluster/apps/cust-portal/service_account/k8s-appserver
+
+- !grant
+  role: !layer cust-portal/secretless
+  members:
+  - !host /conjur/authn-k8s/demo-cluster/apps/cust-portal/service_account/ocp-secretless-broker
+  - !host /conjur/authn-k8s/demo-cluster/apps/cust-portal/service_account/k8s-secretless-broker
+

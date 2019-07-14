@@ -4,6 +4,7 @@ set -eo pipefail
 JENKINS_HOSTNAME=jenkins/master
 JENKINS_HOST_API_KEY=""
 CONJUR_CERT_FILE=~/conjur-$CONJUR_ACCOUNT.pem
+KEYSTORE=/usr/local/openjdk-8/jre/lib/security/cacerts
 
 main() {
   echo "-----"
@@ -12,7 +13,7 @@ main() {
   echo "Waiting for Jenkins to start up..."
   sleep 15
   echo "Initial Jenkins admin password:" $(cat /var/jenkins_home/secrets/initialAdminPassword)
-  keytool -import -alias conjur -keystore /docker-java-home/jre/lib/security/cacerts -file $CONJUR_CERT_FILE
+  keytool -import -alias conjur -keystore $KEYSTORE -file $CONJUR_CERT_FILE
   echo "JENKINS_HOST_API_KEY:" $JENKINS_HOST_API_KEY
 }
 

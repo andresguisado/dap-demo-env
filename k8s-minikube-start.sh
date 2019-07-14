@@ -16,12 +16,12 @@ case $1 in
 	;;
   delete )
 	minikube delete 
-	rm -rf $KUBECONFIGDIR ~/.minikube ~/.kube
+	rm -rf $KUBECONFIGDIR $DEMO_HOME/.minikube ~/.kube
 	exit 0
 	;;
   reinstall )
 	minikube delete
-	rm -rf $KUBECONFIGDIR ~/.minikube ~/.kube
+	rm -rf $KUBECONFIGDIR $DEMO_HOME/.minikube ~/.kube
         unset KUBECONFIG
 	;;
   start )
@@ -63,9 +63,6 @@ kubectl patch node minikube -p '{"spec":{"taints":[]}}'
 
 # delete Exited containers
 docker rm $(docker container ls -a | grep Exited | awk '{print $1}') > /dev/null
-
-# install ntpdate in minikube VM and sync its clock
-echo "sudo yum install -y ntpdate; sudo ntpdate pool.ntp.org" | minikube ssh
 
 echo "Waiting for minikube to finish starting..."
 minikube status

@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+source ./demo.config
+
 if [[ $PLATFORM != openshift ]]; then
   echo "Platform not set to 'openshift'."
   echo "Edit and source demo.config before running this script."
@@ -13,12 +15,12 @@ case $1 in
 	;;
   delete )
 	minishift delete --clear-cache
-	rm -rf $KUBECONFIGDIR ~/.minishift ~/.kube
+	rm -rf $KUBECONFIGDIR $DEMO_HOME/.minishift ~/.kube
 	exit 0
 	;;
   reinstall )
 	minishift delete --clear-cache
-	rm -rf $KUBECONFIGDIR ~/.minishift ~/.kube
+	rm -rf $KUBECONFIGDIR $DEMO_HOME/.minishift ~/.kube
         unset KUBECONFIG
 	;;
   start )
@@ -57,17 +59,19 @@ fi
 eval $(minishift docker-env)
 
 # clean up exited containers
+set +e
 docker rm $(docker container ls -a | grep Exited | awk '{print $1}')
+set -e
 
 # install ntpdate in minishift VM and sync its clock
 echo "sudo yum install -y ntpdate; sudo ntpdate pool.ntp.org" | minishift ssh
 
-# if CLI container is already running, update /etc/hosts and start scope
-if [[ ("$(docker ps | grep $CLI_CONTAINER_NAME)" != "") ]]; then
-  CONJUR_MASTER_HOST_IP=$(minishift ip) 
-  docker exec -it $CLI_CONTAINER_NAME bash -c "echo \"$CONJUR_MASTER_HOST_IP    $CONJUR_MASTER_HOST_NAME\" >> /etc/hosts"
-  scope launch >& /dev/null
-fi
+## Write Minishift docker & oc config values as env var inits to speed up env loading
+OUTPUT_FILE=./minishift.config
+minishift oc-env > $OUTPUT_FILE
+minishift docker-env >> $OUTPUT_FILE
+echo "export DOCKER_REGISTRY_PATH=$(minishift openshift registry)" >> $OUTPUT_FILE
+echo "export CONJUR_MASTER_HOST_IP=$(minishift ip)" >> $OUTPUT_FILE
 
 echo ""
 echo "IMPORTANT!  IMPORTANT!  IMPORTANT!  IMPORTANT!"
