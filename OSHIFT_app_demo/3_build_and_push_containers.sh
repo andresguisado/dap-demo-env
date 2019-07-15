@@ -31,7 +31,9 @@ readonly APPS=(
 
 for app_type in "${APPS[@]}"; do
   pushd ./build/$app_type
-    ./build.sh
+    if $CONNECTED; then
+      ./build.sh
+    fi
 
     test_app_image=$(platform_image "$app_type")
     docker tag $app_type:latest $test_app_image

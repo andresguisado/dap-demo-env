@@ -4,4 +4,5 @@ if ! whoami &> /dev/null; then
     echo "${USER_NAME:-default}:x:$(id -u):0:${USER_NAME:-default} user:${HOME}:/sbin/nologin" >> /etc/passwd
   fi
 fi
-sleep infinity
+# sleep forever
+while true; do sleep 10000; done

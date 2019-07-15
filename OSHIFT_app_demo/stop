@@ -49,7 +49,7 @@ if [ $PLATFORM = 'openshift' ]; then
 fi
 
 echo "Waiting for pods to terminate"
-until [[ "$($cli get pods 2>&1)" == "No resources found." ]]; do
+while [[ "$($cli get pods | grep appserver)" != "" ]]; do
   sleep 4
   echo -n '.'
 done

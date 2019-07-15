@@ -1,6 +1,6 @@
-FROM ubuntu:16.04
+FROM cyberark/demo-app:latest
 
-RUN apt-get update && apt-get install -y curl vim postgresql-client
+RUN apk update && apk add bash curl vim postgresql-client
 
 RUN curl -LO https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64 \
   && chmod a+x jq-linux64 \

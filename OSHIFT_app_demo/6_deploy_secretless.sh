@@ -16,7 +16,7 @@ main() {
   if is_minienv; then
     IMAGE_PULL_POLICY='Never'
   else
-    IMAGE_PULL_POLICY='Always'
+    IMAGE_PULL_POLICY='IfNotPresent'
   fi
 
   create_k8s_secrets
@@ -57,8 +57,8 @@ init_registry_creds() {
 
 ###########################
 init_connection_specs() {
-  secretless_app_image="cyberark/demo-app"
-#  secretless_app_image=$(platform_image secretless)
+#  secretless_app_image="cyberark/demo-app"
+  secretless_app_image=$(platform_image secretless)
   secretless_broker_image=$(platform_image secretless-broker)
   authenticator_client_image=$(platform_image conjur-authn-k8s-client)
 
@@ -124,6 +124,7 @@ popd
       $cli create -f -
 
       wait_for_running_pod postgres-db-0
+      sleep 5 # allow for db startup
 
       # HACK ALERT: turn on connect/disconnect logging - not elegant but conf file doesn't exist in image
       if [ $PLATFORM = openshift ]; then
@@ -137,11 +138,10 @@ popd
 	PG_DATA=/var/lib/postgresql/data 
 	PG_CTL=/usr/lib/postgresql/9.6/bin/pg_ctl
       fi
-set +e; set -x
+
       $cli exec -it postgres-db-0 -- bash -c "sed -e 's#\#log_connections = off#log_connections = on#' -i $PG_CONF_FILE"
       $cli exec -it postgres-db-0 -- bash -c "sed -e 's#\#log_disconnections = off#log_disconnections = on#' -i $PG_CONF_FILE"
       $cli exec -it postgres-db-0 -- bash -c "$PG_RUNUSER PGDATA=$PG_DATA $PG_CTL reload"
-set -e; set +x
 
       wait_for_running_pod postgres-db-0
     ;;
@@ -206,7 +206,6 @@ deploy_secretless_app() {
   ./var_value_add_REST.sh test-app-secretless-db/password $DB_PASSWORD
   ./var_value_add_REST.sh test-app-secretless-db/sslmode $DB_SSLMODE
  
-set -x 
   sed "s#{{ CONJUR_VERSION }}#$CONJUR_VERSION#g" ./$PLATFORM/test-app-secretless.yml |
     sed "s#{{ SECRETLESS_BROKER_IMAGE }}#$secretless_broker_image#g" |
     sed "s#{{ SECRETLESS_APP_IMAGE }}#$secretless_app_image#g" |
@@ -217,7 +216,6 @@ set -x
     sed "s#{{ CONJUR_ACCOUNT }}#$CONJUR_ACCOUNT#g" |
     sed "s#{{ CONJUR_APPLIANCE_URL }}#$conjur_appliance_url#g" |
     $cli create -f -
-set +x 
 
   if [[ "$PLATFORM" == "openshift" ]]; then
     oc expose service test-app-secretless

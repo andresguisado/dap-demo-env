@@ -1,7 +1,7 @@
 #!/bin/bash 
 . utils.sh
 if [[ $# != 1 ]]; then
-  echo "specify 'web' or 'app' or 'sec'"
+  echo "specify 'web' or 'apps' or 'sec'"
   exit -1
 fi
 set_namespace $TEST_APP_NAMESPACE_NAME
