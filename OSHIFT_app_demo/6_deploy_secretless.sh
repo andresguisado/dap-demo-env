@@ -79,10 +79,12 @@ create_k8s_secrets() {
 ###########################
 deploy_database() {
   $cli delete --ignore-not-found \
-     service/test-app-secretless-backend \
+     service/postgres-db \
      statefulset/postgres-db \
+     service/mysql-db \
      statefulset/mysql-db \
      secret/test-app-backend-certs
+
   ensure_env_database
 
   # Create the random database password
@@ -94,7 +96,7 @@ deploy_database() {
   pushd kubernetes
     sed "s#{{ TEST_APP_DB_PASSWORD }}#$DB_PASSWORD#g" ./postgres.template.yml > ./tmp.${TEST_APP_NAMESPACE_NAME}.postgres.yml
     sed "s#{{ TEST_APP_DB_PASSWORD }}#$DB_PASSWORD#g" ./mysql.template.yml > ./tmp.${TEST_APP_NAMESPACE_NAME}.mysql.yml
-popd
+  popd
 
   # Set DB password in OC manifests
   # NOTE: generated files are prefixed with the test app namespace to allow for parallel CI
@@ -123,28 +125,9 @@ popd
       sed "s#{{ IMAGE_PULL_POLICY }}#$IMAGE_PULL_POLICY#g" |
       $cli create -f -
 
-      wait_for_running_pod postgres-db-0
-      sleep 5 # allow for db startup
+    setup_pg_logging
 
-      # HACK ALERT: turn on connect/disconnect logging - not elegant but conf file doesn't exist in image
-      if [ $PLATFORM = openshift ]; then
-        PG_CONF_FILE=/var/lib/pgsql/data/userdata/postgresql.conf
-	PG_RUNUSER=""
-	PG_DATA=/var/lib/pgsql/data/userdata
-        PG_CTL=/opt/rh/rh-postgresql95/root/usr/bin/pg_ctl
-      else
-        PG_CONF_FILE=/var/lib/postgresql/data/postgresql.conf
-	PG_RUNUSER="runuser -l postgres -c"
-	PG_DATA=/var/lib/postgresql/data 
-	PG_CTL=/usr/lib/postgresql/9.6/bin/pg_ctl
-      fi
-
-      $cli exec -it postgres-db-0 -- bash -c "sed -e 's#\#log_connections = off#log_connections = on#' -i $PG_CONF_FILE"
-      $cli exec -it postgres-db-0 -- bash -c "sed -e 's#\#log_disconnections = off#log_disconnections = on#' -i $PG_CONF_FILE"
-      $cli exec -it postgres-db-0 -- bash -c "$PG_RUNUSER PGDATA=$PG_DATA $PG_CTL reload"
-
-      wait_for_running_pod postgres-db-0
-    ;;
+  ;;
 
   mysql) #######################################
     echo "Deploying test app backend"
@@ -155,10 +138,34 @@ popd
      sed "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g" |
      sed "s#{{ IMAGE_PULL_POLICY }}#$IMAGE_PULL_POLICY#g" |
      $cli create -f -
-    ;;
+  ;;
 
   esac
+}
 
+###########################
+setup_pg_logging() {  #  Adds connection & disconnection logging
+  wait_for_running_pod postgres-db-0
+  sleep 5 # allow for db startup
+
+  # HACK ALERT: turn on connect/disconnect logging - not elegant but conf file doesn't exist in image
+  if [ $PLATFORM = openshift ]; then
+    PG_CONF_FILE=/var/lib/pgsql/data/userdata/postgresql.conf
+    PG_RUNUSER=""
+    PG_DATA=/var/lib/pgsql/data/userdata
+    PG_CTL=/opt/rh/rh-postgresql95/root/usr/bin/pg_ctl
+  else
+    PG_CONF_FILE=/var/lib/postgresql/data/postgresql.conf
+    PG_RUNUSER="runuser -l postgres -c"
+    PG_DATA=/var/lib/postgresql/data 
+    PG_CTL=/usr/lib/postgresql/9.6/bin/pg_ctl
+  fi
+
+  $cli exec -it postgres-db-0 -- bash -c "sed -e 's#\#log_connections = off#log_connections = on#' -i $PG_CONF_FILE"
+  $cli exec -it postgres-db-0 -- bash -c "sed -e 's#\#log_disconnections = off#log_disconnections = on#' -i $PG_CONF_FILE"
+  $cli exec -it postgres-db-0 -- bash -c "$PG_RUNUSER PGDATA=$PG_DATA $PG_CTL reload"
+
+  wait_for_running_pod postgres-db-0
 }
 
 ###########################
@@ -183,29 +190,38 @@ deploy_secretless_app() {
   sleep 5
 
   ensure_env_database
-  case "${TEST_APP_DATABASE}" in
-  postgres)
-    DB_PORT=5432
-    DB_PROTOCOL=postgresql
-    ;;
-  mysql)
-    DB_PORT=3306
-    DB_PROTOCOL=mysql
-    ;;
-  esac
 
+  # Connection values common to both databases
   DB_NAME=test_app
-  DB_HOST=test-app-secretless-backend
-  DB_ADDRESS="$DB_HOST:$DB_PORT/$DB_NAME"
   DB_USERNAME=test_app
   DB_SSLMODE=disable
 
-  # Set connections values in Conjur
-  ./var_value_add_REST.sh test-app-secretless-db/address $DB_ADDRESS
-  ./var_value_add_REST.sh test-app-secretless-db/username $DB_USERNAME
-  ./var_value_add_REST.sh test-app-secretless-db/password $DB_PASSWORD
-  ./var_value_add_REST.sh test-app-secretless-db/sslmode $DB_SSLMODE
- 
+  case "${TEST_APP_DATABASE}" in
+    postgres)
+      DB_HOST=postgres-db
+      DB_PORT=5432
+      DB_PROTOCOL=postgresql
+      DB_ADDRESS="$DB_HOST:$DB_PORT/$DB_NAME"
+      # Set connections values in Conjur
+      ./var_value_add_REST.sh test-app-secretless-db/pg-address $DB_ADDRESS
+      ./var_value_add_REST.sh test-app-secretless-db/pg-username $DB_USERNAME
+      ./var_value_add_REST.sh test-app-secretless-db/pg-password $DB_PASSWORD
+      ./var_value_add_REST.sh test-app-secretless-db/pg-sslmode $DB_SSLMODE
+    ;;
+
+    mysql)
+      DB_HOST=mysql-db
+      DB_PORT=3306
+      DB_PROTOCOL=mysql
+      ./var_value_add_REST.sh test-app-secretless-db/mysql-host $DB_HOST
+      ./var_value_add_REST.sh test-app-secretless-db/mysql-port $DB_PORT
+      ./var_value_add_REST.sh test-app-secretless-db/mysql-username $DB_USERNAME
+      ./var_value_add_REST.sh test-app-secretless-db/mysql-password $DB_PASSWORD
+      ./var_value_add_REST.sh test-app-secretless-db/mysql-sslmode $DB_SSLMODE
+    ;;
+  esac
+
+
   sed "s#{{ CONJUR_VERSION }}#$CONJUR_VERSION#g" ./$PLATFORM/test-app-secretless.yml |
     sed "s#{{ SECRETLESS_BROKER_IMAGE }}#$secretless_broker_image#g" |
     sed "s#{{ SECRETLESS_APP_IMAGE }}#$secretless_app_image#g" |

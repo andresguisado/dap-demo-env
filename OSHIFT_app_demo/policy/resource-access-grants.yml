@@ -29,16 +29,26 @@
 - !policy
   id: test-app-secretless-db
   annotations:
-    description: This policy contains the creds to access the secretless app DB
+    description: This policy defines the required creds to access DBs
 
   body:
     - &secretless-variables
-      - !variable address
-      - !variable username
-      - !variable password
-      - !variable sslmode
+      - !variable pg-address
+      - !variable pg-username
+      - !variable pg-password
+      - !variable pg-sslmode
+      - !variable mysql-host
+      - !variable mysql-port
+      - !variable mysql-username
+      - !variable mysql-password
+      - !variable mysql-sslmode
 
     - !permit
       role: !layer /cust-portal/secretless
       privileges: [ read, execute ]
       resources: *secretless-variables
+
+- !permit
+  role: !layer /cust-portal/secretless
+  privileges: [ read, execute ]
+  resources: !variable DemoVault/CICD/CICD_Secrets/SSH-minikube/password

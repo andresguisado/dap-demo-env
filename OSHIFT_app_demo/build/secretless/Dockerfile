@@ -1,6 +1,6 @@
 FROM cyberark/demo-app:latest
 
-RUN apk update && apk add bash curl vim postgresql-client
+RUN apk update && apk add bash curl vim postgresql-client mysql-client openssh
 
 RUN curl -LO https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64 \
   && chmod a+x jq-linux64 \
@@ -9,6 +9,11 @@ RUN curl -LO https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64 
 RUN mv /etc/vim/vimrc /etc/vim/vimrc.bak
 
 WORKDIR /
+
+# setup alt SSH known_hosts file cuz OpenShift 
+RUN touch /known_hosts \
+    && chmod 666 /known_hosts \
+    && echo "UserKnownHostsFile /known_hosts" >> /etc/ssh/ssh_config
 
 COPY test_db.sh /
 COPY uid_entrypoint.sh /

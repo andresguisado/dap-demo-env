@@ -2,11 +2,11 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: test-app-secretless-backend
+  name: mysql-db
   namespace: {{ TEST_APP_NAMESPACE_NAME }}
 spec:
   selector:
-    app: test-app-secretless-backend
+    app: mysql-db
   ports:
     - port: 3306
       targetPort: 3306
@@ -15,21 +15,21 @@ spec:
 apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
-  name: secretless-mysql
+  name: mysql-db
   labels:
-    app: test-app-secretless-backend
+    app: mysql-db
 spec:
-  serviceName: test-app-secretless-backend
+  serviceName: mysql-db
   selector:
     matchLabels:
-      app: test-app-secretless-backend
+      app: mysql-db
   template:
     metadata:
       labels:
-        app: test-app-secretless-backend
+        app: mysql-db
     spec:
       containers:
-      - name: test-app-secretless-backend
+      - name: mysql-db
         image: centos/mysql-57-centos7
         imagePullPolicy: {{ IMAGE_PULL_POLICY }}
         ports:
