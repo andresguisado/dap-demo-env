@@ -1,10 +1,7 @@
-#!/bin/bash 
+#!/bin/bash -x
 set -eo pipefail
 
 . utils.sh
-
-#TEST_APP_DATABASE=mysql
-TEST_APP_DATABASE=postgres
 
 main() {
   announce "Deploying Secretless app for $TEST_APP_NAMESPACE_NAME."
@@ -21,7 +18,8 @@ main() {
 
   create_k8s_secrets
 
-  deploy_database
+  deploy_pg_database
+  deploy_mysql_database
   deploy_secretless_app
 #  initialize_injector
 }
@@ -57,7 +55,6 @@ init_registry_creds() {
 
 ###########################
 init_connection_specs() {
-#  secretless_app_image="cyberark/demo-app"
   secretless_app_image=$(platform_image secretless)
   secretless_broker_image=$(platform_image secretless-broker)
   authenticator_client_image=$(platform_image conjur-authn-k8s-client)
@@ -66,6 +63,12 @@ init_connection_specs() {
   conjur_authenticator_url=https://conjur-follower.$CONJUR_NAMESPACE_NAME.svc.cluster.local/api/authn-k8s/$AUTHENTICATOR_ID
 
   conjur_authn_login_prefix=host/conjur/authn-k8s/$AUTHENTICATOR_ID/apps/$TEST_APP_NAMESPACE_NAME/service_account
+  $cli delete --ignore-not-found secret test-app-backend-certs
+  $cli --namespace $TEST_APP_NAMESPACE_NAME \
+      create secret generic \
+      test-app-backend-certs \
+      --from-file=server.crt=./etc/ca.pem \
+      --from-file=server.key=./etc/ca-key.pem
 }
 
 ###########################
@@ -77,70 +80,84 @@ create_k8s_secrets() {
 }
 
 ###########################
-deploy_database() {
+deploy_mysql_database() {
   $cli delete --ignore-not-found \
-     service/postgres-db \
-     statefulset/postgres-db \
      service/mysql-db \
-     statefulset/mysql-db \
-     secret/test-app-backend-certs
+     statefulset/mysql-db
 
   ensure_env_database
 
   # Create the random database password
-  DB_PASSWORD=$(openssl rand -hex 12)
+  MYSQL_DB_PASSWORD=$(openssl rand -hex 12)
 
-  # Set DB DB_PASSWORD in Kubernetes manifests
-  # NOTE: generated files are prefixed with the test app namespace to allow for parallel CI
+  # Set DB DB_PASSWORD in platform manifest
+  sed "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g" ./$PLATFORM/mysql.template.yml |
+    sed "s#{{ TEST_APP_DB_PASSWORD }}#$MYSQL_DB_PASSWORD#g" ./$PLATFORM/mysql.template.yml \
+    > ./$PLATFORM/tmp.${TEST_APP_NAMESPACE_NAME}.mysql.yml
+  
+  MYSQL_DB_PROTOCOL=mysql
+  MYSQL_DB_NAME=test_app
+  MYSQL_DB_HOST=mysql-db
+  MYSQL_DB_PORT=3306
+  MYSQL_DB_USERNAME=test_app
+  MYSQL_DB_SSLMODE=disable
 
-  pushd kubernetes
-    sed "s#{{ TEST_APP_DB_PASSWORD }}#$DB_PASSWORD#g" ./postgres.template.yml > ./tmp.${TEST_APP_NAMESPACE_NAME}.postgres.yml
-    sed "s#{{ TEST_APP_DB_PASSWORD }}#$DB_PASSWORD#g" ./mysql.template.yml > ./tmp.${TEST_APP_NAMESPACE_NAME}.mysql.yml
-  popd
+  ./var_value_add_REST.sh test-app-secretless-db/mysql-host $MYSQL_DB_HOST
+  ./var_value_add_REST.sh test-app-secretless-db/mysql-port $MYSQL_DB_PORT
+  ./var_value_add_REST.sh test-app-secretless-db/mysql-username $MYSQL_DB_USERNAME
+  ./var_value_add_REST.sh test-app-secretless-db/mysql-password $MYSQL_DB_PASSWORD
+  ./var_value_add_REST.sh test-app-secretless-db/mysql-sslmode $MYSQL_DB_SSLMODE
 
-  # Set DB password in OC manifests
-  # NOTE: generated files are prefixed with the test app namespace to allow for parallel CI
-  pushd openshift
-    sed "s#{{ TEST_APP_DB_PASSWORD }}#$DB_PASSWORD#g" ./postgres.template.yml > ./tmp.${TEST_APP_NAMESPACE_NAME}.postgres.yml
-    sed "s#{{ TEST_APP_DB_PASSWORD }}#$DB_PASSWORD#g" ./mysql.template.yml > ./tmp.${TEST_APP_NAMESPACE_NAME}.mysql.yml
-  popd
+  echo "Deploying test app backend"
 
+  test_app_mysql_docker_image="mysql/mysql-server:5.7"
 
-  case "${TEST_APP_DATABASE}" in
+  sed "s#{{ TEST_APP_DATABASE_DOCKER_IMAGE }}#$test_app_mysql_docker_image#g" \
+		./$PLATFORM/tmp.${TEST_APP_NAMESPACE_NAME}.mysql.yml |
+    sed "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g" |
+    sed "s#{{ IMAGE_PULL_POLICY }}#$IMAGE_PULL_POLICY#g" |
+    $cli create -f -
+}
 
-  postgres) #######################################
-    echo "Create secrets for test app backend"
-    $cli --namespace $TEST_APP_NAMESPACE_NAME \
-      create secret generic \
-      test-app-backend-certs \
-      --from-file=server.crt=./etc/ca.pem \
-      --from-file=server.key=./etc/ca-key.pem
+###########################
+deploy_pg_database() {
+  $cli delete --ignore-not-found \
+     service/postgres-db \
+     statefulset/postgres-db
 
-    echo "Deploying test app backend"
+  ensure_env_database
 
-    test_app_pg_docker_image=$(platform_image pgsql)
+  # Create the random database password
+  PG_DB_PASSWORD=$(openssl rand -hex 12)
 
-    sed "s#{{ TEST_APP_PG_DOCKER_IMAGE }}#$test_app_pg_docker_image#g" ./$PLATFORM/tmp.${TEST_APP_NAMESPACE_NAME}.postgres.yml |
-      sed "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g" |
-      sed "s#{{ IMAGE_PULL_POLICY }}#$IMAGE_PULL_POLICY#g" |
-      $cli create -f -
+  # Set DB_PASSWORD in platform manifest
+  sed "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g" ./$PLATFORM/postgres.template.yml |
+    sed "s#{{ TEST_APP_DB_PASSWORD }}#$PG_DB_PASSWORD#g" ./$PLATFORM/postgres.template.yml \
+    > ./$PLATFORM/tmp.${TEST_APP_NAMESPACE_NAME}.postgres.yml
+
+  PG_DB_NAME=test_app
+  PG_DB_USERNAME=test_app
+  PG_DB_SSLMODE=disable
+  PG_DB_HOST=postgres-db
+  PG_DB_PORT=5432
+  PG_DB_PROTOCOL=postgresql
+  PG_DB_ADDRESS="$PG_DB_HOST:$PG_DB_PORT/$PG_DB_NAME"
+  # Set connections values in Conjur
+  ./var_value_add_REST.sh test-app-secretless-db/pg-address $PG_DB_ADDRESS
+  ./var_value_add_REST.sh test-app-secretless-db/pg-username $PG_DB_USERNAME
+  ./var_value_add_REST.sh test-app-secretless-db/pg-password $PG_DB_PASSWORD
+  ./var_value_add_REST.sh test-app-secretless-db/pg-sslmode $PG_DB_SSLMODE
+
+  echo "Deploying postgres backend"
+
+  test_app_pg_docker_image=$(platform_image pgsql)
+
+  sed "s#{{ TEST_APP_PG_DOCKER_IMAGE }}#$test_app_pg_docker_image#g" ./$PLATFORM/tmp.${TEST_APP_NAMESPACE_NAME}.postgres.yml |
+    sed "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g" |
+    sed "s#{{ IMAGE_PULL_POLICY }}#$IMAGE_PULL_POLICY#g" |
+    $cli create -f -
 
     setup_pg_logging
-
-  ;;
-
-  mysql) #######################################
-    echo "Deploying test app backend"
-
-    test_app_mysql_docker_image="mysql/mysql-server:5.7"
-
-    sed "s#{{ TEST_APP_DATABASE_DOCKER_IMAGE }}#$test_app_mysql_docker_image#g" ./$PLATFORM/tmp.${TEST_APP_NAMESPACE_NAME}.mysql.yml |
-     sed "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g" |
-     sed "s#{{ IMAGE_PULL_POLICY }}#$IMAGE_PULL_POLICY#g" |
-     $cli create -f -
-  ;;
-
-  esac
 }
 
 ###########################
@@ -189,39 +206,6 @@ deploy_secretless_app() {
 
   sleep 5
 
-  ensure_env_database
-
-  # Connection values common to both databases
-  DB_NAME=test_app
-  DB_USERNAME=test_app
-  DB_SSLMODE=disable
-
-  case "${TEST_APP_DATABASE}" in
-    postgres)
-      DB_HOST=postgres-db
-      DB_PORT=5432
-      DB_PROTOCOL=postgresql
-      DB_ADDRESS="$DB_HOST:$DB_PORT/$DB_NAME"
-      # Set connections values in Conjur
-      ./var_value_add_REST.sh test-app-secretless-db/pg-address $DB_ADDRESS
-      ./var_value_add_REST.sh test-app-secretless-db/pg-username $DB_USERNAME
-      ./var_value_add_REST.sh test-app-secretless-db/pg-password $DB_PASSWORD
-      ./var_value_add_REST.sh test-app-secretless-db/pg-sslmode $DB_SSLMODE
-    ;;
-
-    mysql)
-      DB_HOST=mysql-db
-      DB_PORT=3306
-      DB_PROTOCOL=mysql
-      ./var_value_add_REST.sh test-app-secretless-db/mysql-host $DB_HOST
-      ./var_value_add_REST.sh test-app-secretless-db/mysql-port $DB_PORT
-      ./var_value_add_REST.sh test-app-secretless-db/mysql-username $DB_USERNAME
-      ./var_value_add_REST.sh test-app-secretless-db/mysql-password $DB_PASSWORD
-      ./var_value_add_REST.sh test-app-secretless-db/mysql-sslmode $DB_SSLMODE
-    ;;
-  esac
-
-
   sed "s#{{ CONJUR_VERSION }}#$CONJUR_VERSION#g" ./$PLATFORM/test-app-secretless.yml |
     sed "s#{{ SECRETLESS_BROKER_IMAGE }}#$secretless_broker_image#g" |
     sed "s#{{ SECRETLESS_APP_IMAGE }}#$secretless_app_image#g" |
@@ -240,5 +224,5 @@ deploy_secretless_app() {
   echo "Secretless test app deployed."
 }
 
-main $@
+main "$@"
 
