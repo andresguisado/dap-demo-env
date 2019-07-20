@@ -1,6 +1,9 @@
 FROM cyberark/demo-app:latest
 
-RUN apk update && apk add bash curl vim postgresql-client mysql-client openssh
+RUN apk add --no-cache \
+	bash curl vim \
+	postgresql-client mysql-client \
+	openssh python3 ansible
 
 RUN curl -LO https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64 \
   && chmod a+x jq-linux64 \
@@ -10,13 +13,13 @@ RUN mv /etc/vim/vimrc /etc/vim/vimrc.bak
 
 WORKDIR /
 
-# setup alt SSH known_hosts file cuz OpenShift 
-RUN touch /known_hosts \
-    && chmod 666 /known_hosts \
-    && echo "UserKnownHostsFile /known_hosts" >> /etc/ssh/ssh_config
+COPY ans_run.sh ansible.cfg ansible_hosts uid_entrypoint.sh test_db.sh /
 
-COPY test_db.sh /
-COPY uid_entrypoint.sh /
+# setup alt SSH known_hosts file cuz OpenShift 
+RUN touch /known_hosts /inventory \
+    && mkdir -p /.ansible/tmp \
+    && chmod -R 777 /known_hosts /inventory /.ansible /ansible_hosts \
+    && echo "UserKnownHostsFile /known_hosts" >> /etc/ssh/ssh_config
 
 # setup entrypoint for default user
 RUN chmod g=u /etc/passwd /*.sh
