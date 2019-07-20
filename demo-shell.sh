@@ -20,7 +20,5 @@ docker cp ./.minishift/config/ $CNAME:/dap-demo-env/.minishift
 docker cp ./.minishift/ca.pem $CNAME:/dap-demo-env/.minishift
 docker cp ./.minishift/cert.pem $CNAME:/dap-demo-env/.minishift
 docker cp ./.minishift/key.pem $CNAME:/dap-demo-env/.minishift
-docker exec $CNAME bash -c "sed -i -e s#$HOSTDIR#$WORKDIR#gp demo.config"
-docker exec $CNAME bash -c "sed -i -e s#$HOSTDIR#$WORKDIR#gp minishift.config"
 docker exec -it $CNAME bash
 docker stop $CNAME >& /dev/null && docker rm $CNAME >& /dev/null &
