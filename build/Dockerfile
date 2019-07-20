@@ -20,9 +20,9 @@ RUN apk add --no-cache	bash \
 
 RUN apk add --no-cache --virtual .build-deps \
     && curl --retry 7 -Lso /tmp/client-tools.tar.gz "https://github.com/openshift/origin/releases/download/${OPENSHIFT_VERSION}/openshift-origin-client-tools-${OPENSHIFT_VERSION}-${OPENSHIFT_HASH}-linux-64bit.tar.gz" \
-    && tar zxf /tmp/client-tools.tar.gz --strip-components=1 -C /usr/local/bin 
-#    && rm /tmp/client-tools.tar.gz \
-#    && apk del .build-deps
+    && tar zxf /tmp/client-tools.tar.gz --strip-components=1 -C /usr/local/bin \
+    && rm /tmp/client-tools.tar.gz \
+    && apk del .build-deps
 
 RUN git clone https://github.com/jodyhuntatx/dap-demo-env.git
 

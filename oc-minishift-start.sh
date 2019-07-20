@@ -11,6 +11,7 @@ fi
 case $1 in
   stop )
 	minishift stop
+	defaults write NSGlobalDomain NSAppSleepDisabled -bool NO
 	exit 0
 	;;
   delete )
@@ -27,6 +28,7 @@ case $1 in
 	if [[ ! -f $KUBECONFIG ]]; then
 	  unset KUBECONFIG
 	fi
+	defaults write NSGlobalDomain NSAppSleepDisabled -bool YES # disable mac app sleep mode
 	;;
   * ) 
 	echo "Usage: $0 [ reinstall | start | stop | delete ]"
@@ -43,6 +45,7 @@ else
   vboxmanage snapshot minishift list
   set -e
   minishift start --memory "$MINISHIFT_VM_MEMORY" \
+		  --disk-size "30G" \
                   --vm-driver virtualbox \
                   --show-libmachine-logs \
                   --openshift-version "$OPENSHIFT_VERSION"
@@ -56,6 +59,7 @@ else
     export KUBECONFIG=$KUBECONFIGDIR/config
   fi
 fi
+echo "Getting docker env..."
 eval $(minishift docker-env)
 
 # clean up exited containers
@@ -63,8 +67,9 @@ set +e
 docker rm $(docker container ls -a | grep Exited | awk '{print $1}')
 set -e
 
-# install ntpdate in minishift VM and sync its clock
-echo "sudo yum install -y ntpdate; sudo ntpdate pool.ntp.org" | minishift ssh
+# turn off auto-sleep & install ntpdate in minishift VM and sync its clock
+echo "sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target; \
+	sudo yum install -y ntpdate; sudo ntpdate pool.ntp.org" | minishift ssh
 
 ## Write Minishift docker & oc config values as env var inits to speed up env loading
 OUTPUT_FILE=./minishift.config

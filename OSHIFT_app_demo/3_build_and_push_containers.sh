@@ -27,6 +27,7 @@ readonly APPS=(
   "webserver"
   "secretless"
   "pgsql"
+  "mysql"
 )
 
 for app_type in "${APPS[@]}"; do

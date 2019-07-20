@@ -30,8 +30,8 @@ spec:
     spec:
       containers:
       - name: mysql-db
-        image: centos/mysql-57-centos7
-        imagePullPolicy: IfNotPresent
+        image: mysql:latest
+        imagePullPolicy: Never
         ports:
           - containerPort: 3306
         env:

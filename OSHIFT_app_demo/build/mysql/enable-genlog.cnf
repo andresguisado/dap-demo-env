@@ -1,0 +1,3 @@
+[mysqld]
+general_log_file        = /var/lib/mysql/mysql.log
+general_log             = 1
