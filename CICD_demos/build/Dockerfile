@@ -1,5 +1,8 @@
 FROM ubuntu:16.04
 
+ENV TF_VERSION=0.11.14
+ENV TF_PROVIDER_VERSION=0.2.0
+
 # install utilities & ansible
 RUN apt-get update -y \
     && apt-get install -y \
@@ -35,21 +38,15 @@ RUN cd /tmp \
 
 # install terraform & terraform provider
 RUN cd /tmp \
-    && curl -O https://releases.hashicorp.com/terraform/0.11.7/terraform_0.11.7_linux_amd64.zip \
-    && unzip terraform_0.11.7_linux_amd64.zip \
+    && curl -O https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip \
+    && unzip terraform_${TF_VERSION}_linux_amd64.zip \
     && mv terraform /usr/local/bin \
     && rm terraform*.zip \
-    && wget https://github.com/cyberark/terraform-provider-conjur/releases/download/v0.2.0/terraform-provider-conjur-linux-amd64.tar.gz \
+    && wget https://github.com/cyberark/terraform-provider-conjur/releases/download/v${TF_PROVIDER_VERSION}/terraform-provider-conjur-linux-amd64.tar.gz \
     && tar xvzf terraform-provider-conjur-linux-amd64.tar.gz \
     && rm terraform-provider-conjur-linux-amd64.tar.gz \
     && mkdir -p ~/.terraform.d/plugins \
     && mv terraform-provider-conjur ~/.terraform.d/plugins
-
-# install concourse fly cli
-RUN cd /tmp \
-    && curl -LO https://github.com/concourse/fly/releases/download/v4.0.0-rc.93/fly_linux_amd64 \
-    && mv /tmp/fly_linux_amd64 /usr/local/bin/fly \
-    && chmod +x /usr/local/bin/fly
 
 RUN echo "root:demo" | chpasswd		# set demo as root password
 

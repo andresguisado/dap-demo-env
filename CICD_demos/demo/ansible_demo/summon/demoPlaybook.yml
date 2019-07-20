@@ -1,5 +1,5 @@
 ---
-- hosts: demoMachines
+- hosts: '{{ target }}'
   gather_facts: False
   tasks:
     - debug: msg="{{ lookup('env', 'DB_UNAME') }}"

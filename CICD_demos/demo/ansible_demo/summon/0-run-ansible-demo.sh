@@ -3,6 +3,8 @@ if [[ "$1" == "" ]]; then
 	echo "need to specify an environment (dev, test or prod)"
 	exit 01
 fi
+HOST_SPEC=$1
+USER_NAME=docker
 clear
 echo "Here is the contents of secrets.yml:"
 cat secrets.yml
@@ -12,4 +14,4 @@ summon -e $1 ./secrets_echo.sh
 echo
 echo "An Ansible can access these environment vars locally."
 set -x
-summon -e $1 ansible-playbook -i inventory.yml demoPlaybook.yml
+summon -e $HOST_SPEC ansible-playbook -i inventory.yml demoPlaybook.yml --private-key=$SSH_KEY -u $USER_NAME --extra-vars "target=$HOST_SPEC"
