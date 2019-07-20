@@ -67,6 +67,9 @@ docker rm $(docker container ls -a | grep Exited | awk '{print $1}') > /dev/null
 echo "Waiting for minikube to finish starting..."
 minikube status
 
+# add public key to authorized keys for SSH demos
+echo "echo $SSH_PUB_KEY >> ~/.ssh/authorized_keys" | minikube ssh
+
 echo ""
 echo "IMPORTANT!  IMPORTANT!  IMPORTANT!  IMPORTANT!"
 echo "You need to source kubernetes.config again to reference docker daemon in Minikube..."

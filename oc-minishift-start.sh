@@ -71,6 +71,9 @@ set -e
 echo "sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target; \
 	sudo yum install -y ntpdate; sudo ntpdate pool.ntp.org" | minishift ssh
 
+# add public key to authorized keys for SSH demos
+echo "echo $SSH_PUB_KEY >> ~/.ssh/authorized_keys" | minishift ssh
+
 ## Write Minishift docker & oc config values as env var inits to speed up env loading
 OUTPUT_FILE=./minishift.config
 minishift oc-env > $OUTPUT_FILE

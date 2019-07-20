@@ -4,10 +4,5 @@ if [[ $# != 1 ]]; then
   exit -1
 fi
 clear
-echo "This demo shows how a chef recipe can access secrets pulled from Conjur with Summon."
-echo
-echo "Here is the recipe:"
-cat secrets-echo.rb
-echo
 set -x
-summon -e $1 chef-solo secrets-echo.rb
+summon -e $1 chef-solo -c $PWD/solo.rb -o chef-summon::secrets-echo
