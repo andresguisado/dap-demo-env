@@ -11,7 +11,10 @@ fi
 case $1 in
   stop )
 	minishift stop
-	defaults write NSGlobalDomain NSAppSleepDisabled -bool NO
+
+	# enable app naps again
+#	defaults write NSGlobalDomain NSAppSleepDisabled -bool NO
+
 	exit 0
 	;;
   delete )
@@ -28,7 +31,9 @@ case $1 in
 	if [[ ! -f $KUBECONFIG ]]; then
 	  unset KUBECONFIG
 	fi
-	defaults write NSGlobalDomain NSAppSleepDisabled -bool YES # disable mac app sleep mode
+
+	# disable mac app sleep mode
+#	defaults write NSGlobalDomain NSAppSleepDisabled -bool YES
 	;;
   * ) 
 	echo "Usage: $0 [ reinstall | start | stop | delete ]"
@@ -72,7 +77,7 @@ echo "sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sl
 	sudo yum install -y ntpdate; sudo ntpdate pool.ntp.org" | minishift ssh
 
 # add public key to authorized keys for SSH demos
-echo "echo $SSH_PUB_KEY >> ~/.ssh/authorized_keys" | minishift ssh
+echo "echo $(cat $SSH_PUB_KEY) >> ~/.ssh/authorized_keys" | minishift ssh
 
 ## Write Minishift docker & oc config values as env var inits to speed up env loading
 OUTPUT_FILE=./minishift.config

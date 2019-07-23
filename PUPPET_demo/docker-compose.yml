@@ -1,0 +1,30 @@
+version: '2'
+services:
+  puppet:
+    image: puppet-master:demo
+    container_name: puppet
+    hostname: puppet
+    extra_hosts:
+      - "$CONJUR_MASTER_HOST_NAME:$CONJUR_MASTER_HOST_IP"
+    environment:
+      AUTOSIGN: "true"
+      TERM: "xterm"
+      TZ: "UTC"
+    networks: 
+      default: 
+        aliases:
+          - puppet
+    ports:
+      - 3443:443
+ 
+  prod-webapp:
+    image: puppet-agent:demo
+    container_name: prod-webapp
+    hostname: prod-webapp
+    privileged: true
+
+  dev-webapp:
+    image: puppet-agent:demo
+    container_name: dev-webapp
+    hostname: dev-webapp
+    privileged: true

@@ -1,0 +1,6 @@
+#!/bin/bash 
+
+source spring-demo.config
+
+docker-compose down
+docker-compose rm -fs

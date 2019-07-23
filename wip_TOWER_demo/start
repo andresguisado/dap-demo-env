@@ -3,11 +3,11 @@
 source tower-demo.config
 
 main() {
-#  tower_up
-#  load_license
-#  load_user
-#  load_org
-   load_id_cred
+  tower_up
+  load_license
+  load_user
+  load_org
+  load_id_cred
 }
 
 tower_up() {
