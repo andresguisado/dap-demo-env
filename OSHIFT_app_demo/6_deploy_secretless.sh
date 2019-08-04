@@ -66,12 +66,6 @@ init_connection_specs() {
   conjur_authenticator_url=https://conjur-follower.$CONJUR_NAMESPACE_NAME.svc.cluster.local/api/authn-k8s/$AUTHENTICATOR_ID
 
   conjur_authn_login_prefix=host/conjur/authn-k8s/$AUTHENTICATOR_ID/apps/$TEST_APP_NAMESPACE_NAME/service_account
-  $cli delete --ignore-not-found secret test-app-backend-certs
-  $cli --namespace $TEST_APP_NAMESPACE_NAME \
-      create secret generic \
-      test-app-backend-certs \
-      --from-file=server.crt=./etc/ca.pem \
-      --from-file=server.key=./etc/ca-key.pem
 }
 
 ###########################

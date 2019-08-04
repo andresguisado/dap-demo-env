@@ -36,11 +36,6 @@ spec:
         image: {{ IMAGE_NAME }}
         ports:
           - containerPort: 5432
-        volumeMounts:
-          - name: backend-certs
-            mountPath: "/etc/certs/"
-            readOnly: true
-        args: ["-c", "ssl=on", "-c", "ssl_cert_file=/etc/certs/server.crt", "-c", "ssl_key_file=/etc/certs/server.key"]
         env:
           - name: POSTGRES_USER
             value: test_app
@@ -48,8 +43,3 @@ spec:
             value: {{ TEST_APP_DB_PASSWORD }}
           - name: POSTGRES_DB
             value: test_app
-      volumes:
-        - name: backend-certs
-          secret:
-            secretName: test-app-backend-certs
-            defaultMode: 384
