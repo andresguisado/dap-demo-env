@@ -13,7 +13,7 @@ main() {
 }
 
 load_policy() {
-
+set -x
   # login as admin
   docker exec $CLI_CONTAINER_NAME bash -c "echo yes | conjur init -u $CONJUR_APPLIANCE_URL -a $CONJUR_ACCOUNT --force=true"
   docker exec $CLI_CONTAINER_NAME conjur authn login -u admin -p $CONJUR_ADMIN_PASSWORD
@@ -34,6 +34,12 @@ load_policy() {
 	conjur variable values add cicd-secrets/prod-db-username ThisIsThePRODDBuserName
   docker exec $CLI_CONTAINER_NAME \
 	conjur variable values add cicd-secrets/prod-db-password aoiuaspduperjqkjnsoudoo
+  docker exec $CLI_CONTAINER_NAME \
+	conjur variable values add cicd-secrets/aws-access-key-id 909808awsaccesskeyid19238474
+  docker exec $CLI_CONTAINER_NAME \
+	conjur variable values add cicd-secrets/aws-secret-key 908089awssecretkey8098098
+  docker exec $CLI_CONTAINER_NAME \
+	conjur variable values add cicd-secrets/aws-creds-template "$(cat aws-creds.template)"
 }
 
 generate_identity_files() {

@@ -22,22 +22,24 @@ if ! is_minienv; then
   docker push $secretless_broker_tag
 fi
 
+# entries in array correspond to names of directories under ./build/
 readonly APPS=(
   "appserver"
   "webserver"
   "secretless"
   "pgsql"
   "mysql"
+  "nginx-ocp"
 )
 
-for app_type in "${APPS[@]}"; do
-  pushd ./build/$app_type
+for app_name in "${APPS[@]}"; do
+  pushd ./build/$app_name
     if $CONNECTED; then
       ./build.sh
     fi
 
-    test_app_image=$(platform_image "$app_type")
-    docker tag $app_type:latest $test_app_image
+    test_app_image=$(platform_image "$app_name")
+    docker tag $app_name:latest $test_app_image
     if ! is_minienv; then
       docker push $test_app_image
     fi

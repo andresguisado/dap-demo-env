@@ -48,6 +48,9 @@ RUN cd /tmp \
     && mkdir -p ~/.terraform.d/plugins \
     && mv terraform-provider-conjur ~/.terraform.d/plugins
 
+# install AWS CLI
+RUN pip install awscli --upgrade --user
+
 RUN echo "root:demo" | chpasswd		# set demo as root password
 
 # Cleanup

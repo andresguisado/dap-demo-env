@@ -19,6 +19,9 @@
   - !variable test-db-password
   - !variable prod-db-username
   - !variable prod-db-password
+  - !variable aws-access-key-id
+  - !variable aws-secret-key
+  - !variable aws-creds-template
 
   # Permit node identity to retrieve secrets
 - !permit
@@ -31,6 +34,9 @@
   - !variable cicd-secrets/test-db-password
   - !variable cicd-secrets/prod-db-username
   - !variable cicd-secrets/prod-db-password
+  - !variable cicd-secrets/aws-access-key-id
+  - !variable cicd-secrets/aws-secret-key
+  - !variable cicd-secrets/aws-creds-template
   - !variable DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/username
   - !variable DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/password
   - !variable DemoVault/CICD/CICD_Secrets/SSH-minikube/password

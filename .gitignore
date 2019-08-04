@@ -3,6 +3,7 @@
 *.jar*
 *.gz
 *.z
+*.pem
 tmp.*
 .minishift/
 .minikube/

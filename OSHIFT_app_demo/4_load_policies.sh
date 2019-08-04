@@ -69,5 +69,3 @@ pushd openshift
   sed "s#{{ TEST_APP_DB_PASSWORD }}#$password#g" ./postgres.template.yml > ./tmp.${TEST_APP_NAMESPACE_NAME}.postgres.yml
   sed "s#{{ TEST_APP_DB_PASSWORD }}#$password#g" ./mysql.template.yml > ./tmp.${TEST_APP_NAMESPACE_NAME}.mysql.yml
 popd
-
-announce "Added DB password value: $password"

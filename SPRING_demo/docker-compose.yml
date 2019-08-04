@@ -2,7 +2,6 @@ version: "2"
 
 networks:
   demo:
-  bridge:
 
 services:
   demo-pg:
@@ -30,10 +29,9 @@ services:
       CONJUR_AUTHN_LOGIN: $CONJUR_AUTHN_LOGIN
       CONJUR_AUTHN_API_KEY: $CONJUR_AUTHN_API_KEY
     command: [ "sleep", "20000000" ]
-#    command: [ "java", "-jar", "./hello-0.1.0.jar" ]
+#    command: [ "java", "-jar", "./app.jar" ]
     networks:
       - demo
-      - bridge
 
 volumes:
   postgresdata:

@@ -1,29 +1,18 @@
-# This Dockerfile leverages multi-stage builds.
-# See https://docs.docker.com/develop/develop-images/multistage-build/
+FROM cyberark/demo-app:latest
+RUN apk add --no-cache \
+    vim \
+    bash \
+    curl
 
-# STAGE:
-# The 'maven' base is used to package the application
-FROM maven:3.5.3-jdk-8-alpine as maven
+# install Summon and the Summon-conjur provider
+RUN cd /tmp \
+    && curl -LO https://github.com/cyberark/summon/releases/download/v0.6.7/summon-linux-amd64.tar.gz \
+    && tar xzf summon-linux-amd64.tar.gz && mv summon /usr/local/bin/ \
+    && rm summon-linux-amd64.tar.gz \
+    && mkdir -p /usr/local/lib/summon \
+    && curl -LO https://github.com/cyberark/summon-conjur/releases/download/v0.5.2/summon-conjur-linux-amd64.tar.gz \
+    && tar xzf summon-conjur-linux-amd64.tar.gz && mv summon-conjur /usr/local/lib/summon/ \
+    && rm summon-conjur-linux-amd64.tar.gz
 
-WORKDIR /app
-
-# To make best use of Docker caching this section only copies
-# pom.xml and uses it to install all the dependencies required
-# to package the application in the next section
-COPY ./pom.xml ./pom.xml
-RUN mvn verify clean --fail-never
-
-# copy the source and package the application
-COPY ./src ./src
-RUN mvn package && cp target/petstore-*.jar app.jar
-
-# STAGE:
-# This base is used for the final image
-# It extracts the packaged application from the previous stage
-# and builds the final image
-FROM java:8-jre-alpine
-MAINTAINER CyberArk
-
-COPY --from=maven /app/app.jar /app.jar
-
-ENTRYPOINT [ "java", "-jar", "/app.jar"]
+ADD sleep_forever.sh /
+ENTRYPOINT [ "/sleep_forever.sh" ]

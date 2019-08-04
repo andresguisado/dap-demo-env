@@ -23,9 +23,9 @@ docker exec -it $CLI_CONTAINER_NAME bash -c "
   "
 
 echo "Starting the demo service"
-CONJUR_AUTHN_API_KEY=$(docker exec -it $CLI_CONTAINER_NAME conjur host rotate_api_key -h spring_demo | tr -d '\r\n')
+export CONJUR_AUTHN_API_KEY=$(docker exec -it $CLI_CONTAINER_NAME conjur host rotate_api_key -h spring_demo | tr -d '\r\n')
 echo $CONJUR_AUTH_API_KEY
 docker-compose up -d hello
 docker cp $CONJUR_CERT_FILE hello:/etc/
 docker cp ./secrets.yml hello:/
-docker exec hello summon java -jar hello-0.1.0.jar &
+docker exec -it hello bash

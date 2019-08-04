@@ -30,7 +30,7 @@ spec:
     spec:
       containers:
       - name: test-secretless-app-backend
-        image: {{ TEST_APP_DATABASE_DOCKER_IMAGE }}
+        image: {{ IMAGE_NAME }}
         imagePullPolicy: {{ IMAGE_PULL_POLICY }}
         ports:
           - containerPort: 3306

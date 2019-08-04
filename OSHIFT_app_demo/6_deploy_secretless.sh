@@ -18,8 +18,11 @@ main() {
 
   create_k8s_secrets
 
+  # deploy secretless backend servers - ssh connects to minishift vm as backend
   deploy_pg_database
   deploy_mysql_database
+  deploy_nginx
+
   deploy_secretless_app
 #  initialize_injector
 }
@@ -102,17 +105,17 @@ deploy_mysql_database() {
   MYSQL_DB_USERNAME=test_app
   MYSQL_DB_SSLMODE=disable
 
-  ./var_value_add_REST.sh test-app-secretless-db/mysql-host $MYSQL_DB_HOST
-  ./var_value_add_REST.sh test-app-secretless-db/mysql-port $MYSQL_DB_PORT
-  ./var_value_add_REST.sh test-app-secretless-db/mysql-username $MYSQL_DB_USERNAME
-  ./var_value_add_REST.sh test-app-secretless-db/mysql-password $MYSQL_DB_PASSWORD
-  ./var_value_add_REST.sh test-app-secretless-db/mysql-sslmode $MYSQL_DB_SSLMODE
+  ./var_value_add_REST.sh test-app-secretless/mysql-host $MYSQL_DB_HOST
+  ./var_value_add_REST.sh test-app-secretless/mysql-port $MYSQL_DB_PORT
+  ./var_value_add_REST.sh test-app-secretless/mysql-username $MYSQL_DB_USERNAME
+  ./var_value_add_REST.sh test-app-secretless/mysql-password $MYSQL_DB_PASSWORD
+  ./var_value_add_REST.sh test-app-secretless/mysql-sslmode $MYSQL_DB_SSLMODE
 
-  echo "Deploying test app backend"
+  echo "Deploying mysql backend"
 
   test_app_mysql_docker_image="mysql/mysql-server:5.7"
 
-  sed "s#{{ TEST_APP_DATABASE_DOCKER_IMAGE }}#$test_app_mysql_docker_image#g" \
+  sed "s#{{ IMAGE_NAME }}#$test_app_mysql_docker_image#g" \
 		./$PLATFORM/tmp.${TEST_APP_NAMESPACE_NAME}.mysql.yml |
     sed "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g" |
     sed "s#{{ IMAGE_PULL_POLICY }}#$IMAGE_PULL_POLICY#g" |
@@ -143,16 +146,16 @@ deploy_pg_database() {
   PG_DB_PROTOCOL=postgresql
   PG_DB_ADDRESS="$PG_DB_HOST:$PG_DB_PORT/$PG_DB_NAME"
   # Set connections values in Conjur
-  ./var_value_add_REST.sh test-app-secretless-db/pg-address $PG_DB_ADDRESS
-  ./var_value_add_REST.sh test-app-secretless-db/pg-username $PG_DB_USERNAME
-  ./var_value_add_REST.sh test-app-secretless-db/pg-password $PG_DB_PASSWORD
-  ./var_value_add_REST.sh test-app-secretless-db/pg-sslmode $PG_DB_SSLMODE
+  ./var_value_add_REST.sh test-app-secretless/pg-address $PG_DB_ADDRESS
+  ./var_value_add_REST.sh test-app-secretless/pg-username $PG_DB_USERNAME
+  ./var_value_add_REST.sh test-app-secretless/pg-password $PG_DB_PASSWORD
+  ./var_value_add_REST.sh test-app-secretless/pg-sslmode $PG_DB_SSLMODE
 
   echo "Deploying postgres backend"
 
   test_app_pg_docker_image=$(platform_image pgsql)
 
-  sed "s#{{ TEST_APP_PG_DOCKER_IMAGE }}#$test_app_pg_docker_image#g" ./$PLATFORM/tmp.${TEST_APP_NAMESPACE_NAME}.postgres.yml |
+  sed "s#{{ IMAGE_NAME }}#$test_app_pg_docker_image#g" ./$PLATFORM/tmp.${TEST_APP_NAMESPACE_NAME}.postgres.yml |
     sed "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g" |
     sed "s#{{ IMAGE_PULL_POLICY }}#$IMAGE_PULL_POLICY#g" |
     $cli create -f -
@@ -183,6 +186,30 @@ setup_pg_logging() {  #  Adds connection & disconnection logging
   $cli exec -it postgres-db-0 -- bash -c "$PG_RUNUSER PGDATA=$PG_DATA $PG_CTL reload"
 
   wait_for_running_pod postgres-db-0
+}
+
+###########################
+deploy_nginx() {
+  $cli delete --ignore-not-found \
+     service/nginx \
+     statefulset/nginx
+
+  echo "Deploying nginx backend"
+
+  nginx_image=$(platform_image nginx-ocp)
+
+  # Note: all server-side authn creds are provisioned in the image build
+  # Which begs the question - how would you ever rotate that?
+
+  HTTP_UNAME=demo
+  HTTP_PWD=demo
+  ./var_value_add_REST.sh test-app-secretless/http-username $HTTP_UNAME
+  ./var_value_add_REST.sh test-app-secretless/http-password $HTTP_PWD
+
+  sed "s#{{ IMAGE_NAME }}#$nginx_image#g" ./$PLATFORM/nginx.template.yml |
+    sed "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g" |
+    sed "s#{{ IMAGE_PULL_POLICY }}#$IMAGE_PULL_POLICY#g" |
+    $cli create -f -
 }
 
 ###########################
