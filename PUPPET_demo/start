@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 set -eou pipefail
 
 #./0-build-all.sh
@@ -61,8 +61,8 @@ inject_hf_token() {
 }
 
 copy_files_to_puppet_master() {
-  docker cp ./puppet/manifests/ puppet:/etc/puppetlabs/code/environments/production/manifests/
-  docker cp ./puppet/modules/motd/ puppet:/etc/puppetlabs/code/environments/production/modules/motd/
+  docker cp ./puppet/manifests/ puppet:/etc/puppetlabs/code/environments/production/
+  docker cp ./puppet/modules/motd/ puppet:/etc/puppetlabs/code/environments/production/
 }
 
 runIncli() {

@@ -6,11 +6,9 @@ class conjur (
   Optional[String] $account = $conjur::params::account,
   Integer $version = $conjur::params::version,
 
-  # NOTE these Anys are for compatibility with Puppet < 4.6, so that
-  # Sensitive can be used if supported and Strings if not.
-  Optional[Any] $authn_api_key = $conjur::params::authn_api_key,
-  Optional[Any] $authn_token = $conjur::params::authn_token,
-  Optional[Any] $host_factory_token = $conjur::params::host_factory_token,
+  Optional[Sensitive] $authn_api_key = $conjur::params::authn_api_key,
+  Optional[Sensitive] $authn_token = $conjur::params::authn_token,
+  Optional[Sensitive] $host_factory_token = $conjur::params::host_factory_token,
 ) inherits conjur::params {
   $client = conjur::client($appliance_url, $version, $ssl_certificate)
 
@@ -24,13 +22,11 @@ class conjur (
       $api_key = $authn_api_key
       $authn_account = $account
     } elsif $host_factory_token {
-      $authn_login_parts = split($authn_login, '/')
-      if $authn_login_parts[0] != 'host' {
+      $host_name = regsubst($authn_login, /^host\//, '')
+      if $authn_login == $host_name { # substitution failed
         fail('can only create hosts with host factory')
       }
-      $host_details = $client.conjur::manufacture_host(
-        $authn_login_parts[1], $host_factory_token
-      )
+      $host_details = $client.conjur::manufacture_host($host_name, $host_factory_token)
       $api_key = $host_details[api_key]
       $authn_account = split($host_details[id], ':')[0]
     }
@@ -38,5 +34,11 @@ class conjur (
     $token = $client.conjur::token($authn_login, $api_key, $authn_account)
   }
 
-  require conjur::config_files
+  if $facts['os']['family'] == 'Windows' {
+    require conjur::config::registry
+    require conjur::identity::wincred
+  } else {
+    require conjur::config::files
+    require conjur::identity::files
+  }
 }

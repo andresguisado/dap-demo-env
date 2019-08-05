@@ -6,7 +6,7 @@ echo "step 1: Start Puppet master container"
 docker run -d --name create-puppet-image --hostname puppet puppet/puppetserver-standalone
 sleep 30
 echo "step 2: Install Conjur module"
-docker exec create-puppet-image puppet module install cyberark-conjur --version 1.2.0
+docker exec create-puppet-image puppet module install cyberark-conjur --version 2.0.1
 
 echo "step 3: Stop image and commit to repository"
 # Create our puppet enterprise image

@@ -7,10 +7,10 @@ class conjur::params {
   $authn_api_key = undef
   $ssl_certificate = $conjur_config['ssl_certificate']
   $authn_token = $conjur_config['token'].then |$token| {
-    Sensitive($token)
+    $token
   }.lest ||{$conjur_config['encrypted_token'].then |$token| {
-    Sensitive($token.conjur::decrypt)
+    $token.conjur::decrypt
   }}
   $host_factory_token = undef
-  $version = $conjur_config['version'].lest || { 5 }
+  $version = $conjur_config['version'].lest || { 4 }
 }

@@ -16,6 +16,9 @@ services:
           - puppet
     ports:
       - 3443:443
+      - 8140:8140
+      - 8142:8142
+      - 61613:61613
  
   prod-webapp:
     image: puppet-agent:demo
