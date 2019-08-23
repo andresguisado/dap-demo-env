@@ -10,6 +10,9 @@ import java.io.UnsupportedEncodingException;
 
 public class ConjurJava {
 
+	// set global variables from environment variables
+	public static String java_key_store_file = System.getenv("JAVA_KEY_STORE_FILE");
+	public static String java_key_store_password = System.getenv("JAVA_KEY_STORE_PASSWORD");
 	public static String conjur_appliance_url = System.getenv("CONJUR_APPLIANCE_URL");
 	public static String conjur_account = System.getenv("CONJUR_ACCOUNT");
 	public static String conjur_user = System.getenv("CONJUR_USER");
@@ -26,13 +29,13 @@ public class ConjurJava {
 	  String authHeader, requestURL = "";
 
 	  // open key store containing Conjur cert
-	  System.setProperty("javax.net.ssl.trustStore", "./conjur.jks");
-	  System.setProperty("javax.net.ssl.trustStorePassword", "changeit");
+	  System.setProperty("javax.net.ssl.trustStore", java_key_store_file);
+	  System.setProperty("javax.net.ssl.trustStorePassword", java_key_store_password);
 	  System.setProperty("javax.net.ssl.trustStoreType", "JKS");
 
 	  // basic health check
 	  /*
-	  String health = conjurGet(conjur_appliance_url + "/health", "");
+	  String health = httpGet(conjur_appliance_url + "/health", "");
   	  System.out.println("Health output:" + health);
 	  */
 
@@ -41,14 +44,14 @@ public class ConjurJava {
 	  /*
 	  authHeader = "Basic " + base64Encode(conjur_user + ":" + conjur_password);
 	  requestURL = conjur_appliance_url + "/authn/" + conjur_account + "/login";
-	  conjur_authn_api_key = conjurGet(requestURL, authHeader);
+	  conjur_authn_api_key = httpGet(requestURL, authHeader);
   	  System.out.println("API key: " + conjur_authn_api_key);
 	  conjur_authn_login = conjur_user;
 	  */
 
 	  // Authenticate with API key to get raw access token, base64 encode the token
 	  requestURL = conjur_appliance_url + "/authn/" + conjur_account + "/" + conjur_authn_login + "/authenticate";
-	  String rawToken = conjurPost(requestURL, conjur_authn_api_key);
+	  String rawToken = httpPost(requestURL, conjur_authn_api_key);
   	  // System.out.println("Raw token: " + rawToken);
 	  String accessToken = base64Encode(rawToken);
 	  // System.out.println("Access token: " + accessToken);
@@ -56,15 +59,15 @@ public class ConjurJava {
 	  // Get variable using encoded access token
 	  authHeader = "Token token=\"" + accessToken + "\""; 
 	  requestURL = conjur_appliance_url + "/secrets/" + conjur_account + "/variable/" + conjur_var_id;
-	  String secretValue = conjurGet(requestURL, authHeader);
+	  String secretValue = httpGet(requestURL, authHeader);
   	  System.out.println("Secret value: " + secretValue);
 
 	} // main()
 
 	/***********************
-	 * String conjurGet()
+	 * String httpGet()
 	 ***********************/
-        public static String conjurGet(String url_string, String auth_header) {
+        public static String httpGet(String url_string, String auth_header) {
 	  String output = "";
 	  try {
 		URL url = new URL(url_string);
@@ -96,13 +99,13 @@ public class ConjurJava {
 
 	  return output;
 
-	} // conjurGet()
+	} // httpGet()
 
 
 	/***********************
-	 * conjurPost()
+	 * httpPost()
 	 ***********************/
-        public static String conjurPost(String url_string, String input) {
+        public static String httpPost(String url_string, String bodyContent) {
 	  String output = "";
 	  try {
 	  	URL url = new URL(url_string);
@@ -112,7 +115,7 @@ public class ConjurJava {
 		conn.setRequestProperty("Content-Type", "application/json");
 
 		OutputStream os = conn.getOutputStream();
-		os.write(input.getBytes());
+		os.write(bodyContent.getBytes());
 		os.flush();
 
 		if (conn.getResponseCode() != 200) {
@@ -138,7 +141,7 @@ public class ConjurJava {
 
 	 return output;
 
-	} // conjurPost()
+	} // httpPost()
 
 	/***********************
 	 * base64Encode()
