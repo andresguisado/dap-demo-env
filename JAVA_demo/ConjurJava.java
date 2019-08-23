@@ -19,7 +19,7 @@ public class ConjurJava {
 	public static String conjur_var_id = System.getenv("CONJUR_VAR_ID");
 
 	/***********************
-	 * main()
+	 * main() - takes no arguments
 	 ***********************/
 	public static void main(String[] args) {
 
@@ -46,14 +46,14 @@ public class ConjurJava {
 	  conjur_authn_login = conjur_user;
 	  */
 
-	  // Authenticate with API key to get access token
+	  // Authenticate with API key to get raw access token, base64 encode the token
 	  requestURL = conjur_appliance_url + "/authn/" + conjur_account + "/" + conjur_authn_login + "/authenticate";
 	  String rawToken = conjurPost(requestURL, conjur_authn_api_key);
   	  // System.out.println("Raw token: " + rawToken);
 	  String accessToken = base64Encode(rawToken);
 	  // System.out.println("Access token: " + accessToken);
 
-	  // Get variable using access token
+	  // Get variable using encoded access token
 	  authHeader = "Token token=\"" + accessToken + "\""; 
 	  requestURL = conjur_appliance_url + "/secrets/" + conjur_account + "/variable/" + conjur_var_id;
 	  String secretValue = conjurGet(requestURL, authHeader);
