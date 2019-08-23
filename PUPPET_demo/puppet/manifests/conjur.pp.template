@@ -1,7 +1,7 @@
 class { conjur:
   account	     => '{{ CONJUR_ACCOUNT }}',
   appliance_url      => '{{ CONJUR_APPLIANCE_URL }}/api',
-  authn_login        => "host/${::trusted['hostname']}.localdomain",
+  authn_login        => "host/${::trusted['hostname']}",
   host_factory_token => Sensitive('{{ CONJUR_HF_TOKEN }}'),
   ssl_certificate    => file('/etc/conjur.pem'),
   version            => 5,

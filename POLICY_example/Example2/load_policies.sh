@@ -1,5 +1,5 @@
 #!/bin/bash
-CLI=oc
+CLI=docker
 CONJUR_CLI=conjur-cli
 
 filelist=$(ls *.yml)

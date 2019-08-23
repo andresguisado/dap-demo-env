@@ -13,7 +13,6 @@ main() {
 }
 
 load_policy() {
-set -x
   # login as admin
   docker exec $CLI_CONTAINER_NAME bash -c "echo yes | conjur init -u $CONJUR_APPLIANCE_URL -a $CONJUR_ACCOUNT --force=true"
   docker exec $CLI_CONTAINER_NAME conjur authn login -u admin -p $CONJUR_ADMIN_PASSWORD

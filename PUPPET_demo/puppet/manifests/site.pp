@@ -20,19 +20,17 @@ node /^dev-webapp.*$/ {
 }
 
 # Production Windows node with secret store in conjur
-node /^WIN.*$/ {
+node /^win.*$/ {
   require conjur
 
   $mysecretkey = conjur::secret('puppetdemo/secretkey')
   $mydbpassword = conjur::secret('puppetdemo/dbpassword')
 
-  notify { "*** Secret key - encrypted:  ${mysecretkey} ": }
   notify { "*** Secret key - unencrypted:  ${mysecretkey.unwrap} ": }
-  notify { "*** DB Password - encrypted:  ${mydbpassword} ": }
   notify { "*** DB Password - unencrypted:  ${mydbpassword.unwrap} ": }
   notify { "******* Writing secret key to file /etc/mysecretkey ******": }
 
-  file { '/etc/mysecretkey':
+  file { 'C:\mysecretkey.txt':
     ensure => file,
     content => Sensitive($mysecretkey),
     mode => '0600'

@@ -2,11 +2,11 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: test-app-secretless-backend
+  name: postgres-db
   namespace: {{ TEST_APP_NAMESPACE_NAME }}
 spec:
   selector:
-    app: test-app-secretless-backend
+    app: postgres-db
   ports:
     - port: 5432
       targetPort: 5432
@@ -17,21 +17,21 @@ kind: StatefulSet
 metadata:
   name: postgres-db
   labels:
-    app: test-app-secretless-backend
+    app: postgres-db
 spec:
-  serviceName: test-app-secretless-backend
+  serviceName: postgres-db
   selector:
     matchLabels:
-      app: test-app-secretless-backend
+      app: postgres-db
   template:
     metadata:
       labels:
-        app: test-app-secretless-backend
+        app: postgres-db
     spec:
       securityContext:
         fsGroup: 999
       containers:
-      - name: test-app-secretless-backend
+      - name: postgres-db
         imagePullPolicy: {{ IMAGE_PULL_POLICY }}
         image: {{ IMAGE_NAME }}
         ports:
