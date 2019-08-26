@@ -40,7 +40,7 @@ public class ConjurJava {
 	  */
 
 	  // Login human user with password to get user's API key 
-	  // Note: This is skipped when using a host login w/ api-key
+	  // Note: This is should be skipped when using a host login w/ api-key
 	  /*
 	  authHeader = "Basic " + base64Encode(conjur_user + ":" + conjur_password);
 	  requestURL = conjur_appliance_url + "/authn/" + conjur_account + "/login";

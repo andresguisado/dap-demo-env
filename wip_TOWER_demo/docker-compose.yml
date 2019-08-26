@@ -4,7 +4,13 @@ services:
   tower:
     container_name: tower
     image: $TOWER_IMAGE_NAME
-    build: ./build
+    build: ./build/tower
     restart: always
     ports:
     - $TOWER_INTERNAL_PORT:$TOWER_EXTERNAL_PORT
+
+  pgsql:
+    container_name: pgsql
+    image: $PGSQL_IMAGE_NAME
+    build: ./build/pgsql
+    restart: always
