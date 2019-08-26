@@ -10,64 +10,104 @@ import java.io.UnsupportedEncodingException;
 
 public class ConjurJava {
 
-	// set global variables from environment variables
-	public static String java_key_store_file = System.getenv("JAVA_KEY_STORE_FILE");
-	public static String java_key_store_password = System.getenv("JAVA_KEY_STORE_PASSWORD");
-	public static String conjur_appliance_url = System.getenv("CONJUR_APPLIANCE_URL");
-	public static String conjur_account = System.getenv("CONJUR_ACCOUNT");
-	public static String conjur_user = System.getenv("CONJUR_USER");
-	public static String conjur_password = System.getenv("CONJUR_PASSWORD");
-	public static String conjur_authn_login = System.getenv("CONJUR_AUTHN_LOGIN");
-	public static String conjur_authn_api_key = System.getenv("CONJUR_AUTHN_API_KEY");
-	public static String conjur_var_id = System.getenv("CONJUR_VAR_ID");
-
-	/***********************
-	 * main() - takes no arguments
-	 ***********************/
+	// main() - takes no arguments
 	public static void main(String[] args) {
 
-	  String authHeader, requestURL = "";
+	  initJavaKeyStore(System.getenv("JAVA_KEY_STORE_FILE"),
+			   System.getenv("JAVA_KEY_STORE_PASSWORD") );
 
-	  // open key store containing Conjur cert
-	  System.setProperty("javax.net.ssl.trustStore", java_key_store_file);
-	  System.setProperty("javax.net.ssl.trustStorePassword", java_key_store_password);
-	  System.setProperty("javax.net.ssl.trustStoreType", "JKS");
+	  initConnection( System.getenv("CONJUR_APPLIANCE_URL"),
+			  System.getenv("CONJUR_ACCOUNT") );
+	/*
+	  getHealth();
+	  String apiKey = authnLogin(   System.getenv("CONJUR_USER"),
+					System.getenv("CONJUR_PASSWORD") );
+	  authenticate(System.getenv("CONJUR_USER"), apiKey);
+	 */
 
-	  // basic health check
-	  /*
-	  String health = httpGet(conjur_appliance_url + "/health", "");
-  	  System.out.println("Health output:" + health);
-	  */
+	  authenticate( System.getenv("CONJUR_AUTHN_LOGIN"),
+			System.getenv("CONJUR_AUTHN_API_KEY") );
 
-	  // Login human user with password to get user's API key 
-	  // Note: This is should be skipped when using a host login w/ api-key
-	  /*
-	  authHeader = "Basic " + base64Encode(conjur_user + ":" + conjur_password);
-	  requestURL = conjur_appliance_url + "/authn/" + conjur_account + "/login";
-	  conjur_authn_api_key = httpGet(requestURL, authHeader);
-  	  System.out.println("API key: " + conjur_authn_api_key);
-	  conjur_authn_login = conjur_user;
-	  */
-
-	  // Authenticate with API key to get raw access token, base64 encode the token
-	  requestURL = conjur_appliance_url + "/authn/" + conjur_account + "/" + conjur_authn_login + "/authenticate";
-	  String rawToken = httpPost(requestURL, conjur_authn_api_key);
-  	  // System.out.println("Raw token: " + rawToken);
-	  String accessToken = base64Encode(rawToken);
-	  // System.out.println("Access token: " + accessToken);
-
-	  // Get variable using encoded access token
-	  authHeader = "Token token=\"" + accessToken + "\""; 
-	  requestURL = conjur_appliance_url + "/secrets/" + conjur_account + "/variable/" + conjur_var_id;
-	  String secretValue = httpGet(requestURL, authHeader);
-  	  System.out.println("Secret value: " + secretValue);
+  	  System.out.println("Secret value: " 
+			+ variableValue(System.getenv("CONJUR_VAR_ID")) );
 
 	} // main()
 
-	/***********************
-	 * String httpGet()
-	 ***********************/
-        public static String httpGet(String url_string, String auth_header) {
+
+	/******************************************************************
+	 * PUBLIC MEMBERS
+	 ******************************************************************/
+
+	// =====================
+	// void initJavaKeyStore - initializes Java key store containing server cert
+	public static void initJavaKeyStore(String JKSfile, String JKSpassword) {
+	  System.setProperty("javax.net.ssl.trustStore", JKSfile);
+	  System.setProperty("javax.net.ssl.trustStorePassword", JKSpassword);
+	  System.setProperty("javax.net.ssl.trustStoreType", "JKS");
+	}
+
+	// =====================
+	// void initConnection() - sets private appliance URL and account members
+	public static void initConnection(String _applianceUrl, String _account) {
+	   conjurApplianceUrl = _applianceUrl;
+	   conjurAccount = _account;
+	}
+
+	// =====================
+	// void setAccessToken() - sets private access token member
+	public static void setAccessToken(String _rawToken) {
+	  conjurAccessToken = base64Encode(_rawToken);
+	}
+
+	// =====================
+	// void getHealth() - basic health check
+	public static void getHealth() {
+  	  System.out.println("Health output:" 
+			+ httpGet(conjurApplianceUrl + "/health", "") );
+	}
+
+	// =====================
+	// String authnLogin() - Logs in human user with password, returns user's API key 
+	public static String authnLogin(String _user, String _password) {
+	  String authHeader = "Basic " + base64Encode(_user + ":" + _password);
+	  String requestUrl = conjurApplianceUrl
+			+ "/authn/" + conjurAccount + "/login";
+	  String authnApiKey = httpGet(requestUrl, authHeader);
+  	  // System.out.println("API key: " + authnApiKey);
+	  return authnApiKey;
+	}
+
+	// =====================
+	// void authenticate() - authenticates with API key, sets private access token member
+	public static void authenticate(String _authnLogin, String _apiKey) {
+	  String requestUrl = conjurApplianceUrl
+			+ "/authn/" + conjurAccount + "/" 
+			+ _authnLogin + "/authenticate";
+	  String rawToken = httpPost(requestUrl, _apiKey);
+  	  // System.out.println("Raw token: " + rawToken);
+	  conjurAccessToken = base64Encode(rawToken);
+	  // System.out.println("Access token: " + conjurAccessToken);
+	}
+
+	// =====================
+	// String variableValue() - gets variable using private access token
+	public static String variableValue(String _varId) {
+	  String authHeader = "Token token=\"" + conjurAccessToken + "\""; 
+	  String requestUrl = conjurApplianceUrl
+		+ "/secrets/" + conjurAccount + "/variable/" + _varId;
+	  return httpGet(requestUrl, authHeader);
+        }
+
+	/******************************************************************
+	 * PRIVATE MEMBERS
+	 ******************************************************************/
+
+	 static private String conjurApplianceUrl;;
+	 static private String conjurAccount;
+	 static private String conjurAccessToken;
+
+	// =====================
+        private static String httpGet(String url_string, String auth_header) {
 	  String output = "";
 	  try {
 		URL url = new URL(url_string);
@@ -102,10 +142,9 @@ public class ConjurJava {
 	} // httpGet()
 
 
-	/***********************
-	 * httpPost()
-	 ***********************/
-        public static String httpPost(String url_string, String bodyContent) {
+	// =====================
+	// String httpPost() 
+        private static String httpPost(String url_string, String bodyContent) {
 	  String output = "";
 	  try {
 	  	URL url = new URL(url_string);
@@ -143,10 +182,9 @@ public class ConjurJava {
 
 	} // httpPost()
 
-	/***********************
-	 * base64Encode()
-	 ***********************/
-	static String base64Encode(String input) {
+	// =====================
+	// String base64Encode() - base64 encodes argument and returns encoded string
+	private static String base64Encode(String input) {
 	  String encodedString = "";
 	  try {
 	    encodedString = Base64.getEncoder().encodeToString(input.getBytes("utf-8"));
