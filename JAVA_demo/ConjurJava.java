@@ -10,9 +10,9 @@ import java.io.UnsupportedEncodingException;
 
 public class ConjurJava {
 
-/******************************************************************
- * 			PUBLIC MEMBERS
- ******************************************************************/
+  /******************************************************************
+   * 			PUBLIC MEMBERS
+   ******************************************************************/
 
 	/* =====================
 	   void initJavaKeyStore - initializes Java key store containing server cert
@@ -32,7 +32,7 @@ public class ConjurJava {
 	}
 
 	/* =====================
-	   void setAccessToken() - sets private access token member
+	   void setAccessToken() - sets private access token member, use with authn-k8s
 	*/
 	public static void setAccessToken(String _rawToken) {
 	  conjurAccessToken = base64Encode(_rawToken);
@@ -81,9 +81,9 @@ public class ConjurJava {
 	  return httpGet(requestUrl, authHeader);
         }
 
-/******************************************************************
- * 			PRIVATE MEMBERS
- ******************************************************************/
+  /******************************************************************
+   * 			PRIVATE MEMBERS
+   ******************************************************************/
 
 	 static private String conjurApplianceUrl;;
 	 static private String conjurAccount;
