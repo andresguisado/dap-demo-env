@@ -37,6 +37,6 @@
   - !variable cicd-secrets/aws-access-key-id
   - !variable cicd-secrets/aws-secret-key
   - !variable cicd-secrets/aws-creds-template
-  - !variable DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/username
-  - !variable DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/password
-  - !variable DemoVault/CICD/CICD_Secrets/SSH-minikube/password
+#  - !variable DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/username
+#  - !variable DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/password
+#  - !variable DemoVault/CICD/CICD_Secrets/SSH-minikube/password

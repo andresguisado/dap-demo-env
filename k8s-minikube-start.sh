@@ -68,7 +68,7 @@ echo "Waiting for minikube to finish starting..."
 minikube status
 
 # add public key to authorized keys for SSH demos
-echo "echo $SSH_PUB_KEY >> ~/.ssh/authorized_keys" | minikube ssh
+echo "echo $(cat $SSH_PUB_KEY) >> ~/.ssh/authorized_keys; logout" | minikube ssh
 
 echo ""
 echo "IMPORTANT!  IMPORTANT!  IMPORTANT!  IMPORTANT!"

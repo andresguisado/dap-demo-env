@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.Base64;
 import java.io.UnsupportedEncodingException;
 
@@ -14,7 +15,7 @@ public class ConjurJava {
    * 			PUBLIC MEMBERS
    ******************************************************************/
 
-	/* =====================
+	/* ===============================================================
 	   void initJavaKeyStore - initializes Java key store containing server cert
 	*/
 	public static void initJavaKeyStore(String _jksFile, String _jksPassword) {
@@ -23,7 +24,7 @@ public class ConjurJava {
 	  System.setProperty("javax.net.ssl.trustStoreType", "JKS");
 	}
 
-	/* =====================
+	/* ===============================================================
 	   void initConnection() - sets private appliance URL and account members
 	*/
 	public static void initConnection(String _applianceUrl, String _account) {
@@ -31,14 +32,14 @@ public class ConjurJava {
 	   conjurAccount = _account;
 	}
 
-	/* =====================
+	/* ===============================================================
 	   void setAccessToken() - sets private access token member, use with authn-k8s
 	*/
 	public static void setAccessToken(String _rawToken) {
 	  conjurAccessToken = base64Encode(_rawToken);
 	}
 
-	/* =====================
+	/* ===============================================================
 	   void getHealth() - basic health check
 	*/
 	public static void getHealth() {
@@ -46,7 +47,7 @@ public class ConjurJava {
 			+ httpGet(conjurApplianceUrl + "/health", "") );
 	}
 
-	/* =====================
+	/* ===============================================================
 	   String authnLogin() - Logs in human user with password, returns user's API key 
 	*/
 	public static String authnLogin(String _user, String _password) {
@@ -58,26 +59,38 @@ public class ConjurJava {
 	  return authnApiKey;
 	}
 
-	/* =====================
+	/* ===============================================================
 	   void authenticate() - authenticates with API key, sets private access token member
 	*/
 	public static void authenticate(String _authnLogin, String _apiKey) {
-	  String requestUrl = conjurApplianceUrl
-				+ "/authn/" + conjurAccount + "/" 
-				+ _authnLogin + "/authenticate";
+	  String requestUrl = conjurApplianceUrl;
+	  try {
+		requestUrl = requestUrl + "/authn/" + conjurAccount + "/" 
+				+ URLEncoder.encode(_authnLogin, "UTF-8")+ "/authenticate";
+  	  	// System.out.println("Authenticate requestUrl: " + requestUrl);
+	  } catch (UnsupportedEncodingException e) {
+		e.printStackTrace();
+	  }
+
 	  String rawToken = httpPost(requestUrl, _apiKey);
   	  // System.out.println("Raw token: " + rawToken);
 	  conjurAccessToken = base64Encode(rawToken);
 	  // System.out.println("Access token: " + conjurAccessToken);
 	}
 
-	/* =====================
+	/* ===============================================================
 	   String variableValue() - gets variable value by name using private members
 	*/
 	public static String variableValue(String _varId) {
-	  String authHeader = "Token token=\"" + conjurAccessToken + "\""; 
-	  String requestUrl = conjurApplianceUrl
-		+ "/secrets/" + conjurAccount + "/variable/" + _varId;
+	  String authHeader = "Token token=\"" + conjurAccessToken + "\"";
+	  String requestUrl = conjurApplianceUrl;
+	  try {
+		requestUrl = requestUrl + "/secrets/" + conjurAccount 
+				+ "/variable/" + URLEncoder.encode(_varId, "UTF-8");
+  	  	// System.out.println("Variable requestUrl: " + requestUrl);
+	  } catch (UnsupportedEncodingException e) {
+		e.printStackTrace();
+	  }
 	  return httpGet(requestUrl, authHeader);
         }
 
@@ -89,7 +102,7 @@ public class ConjurJava {
 	 static private String conjurAccount;
 	 static private String conjurAccessToken;
 
-	/* =====================
+	/* ===============================================================
 	   String httpGet() -
 	*/
         private static String httpGet(String url_string, String auth_header) {
@@ -127,7 +140,7 @@ public class ConjurJava {
 	} // httpGet()
 
 
-	/* =====================
+	/* ===============================================================
 	   String httpPost() -
 	*/
         private static String httpPost(String url_string, String bodyContent) {
@@ -168,7 +181,7 @@ public class ConjurJava {
 
 	} // httpPost()
 
-	/* =====================
+	/* ===============================================================
 	   String base64Encode() - base64 encodes argument and returns encoded string
 	*/
 	private static String base64Encode(String input) {

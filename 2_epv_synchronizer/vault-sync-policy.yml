@@ -1,15 +1,14 @@
+- !group
+  id: DemoVault-admins
+
+- !policy
+  id: DemoVault
+  owner: !group DemoVault-admins
+
 - !host
   id: Sync_WIN-T4KRGHVATN4
 
-- !group
-  id: DemoVault/CICD-admins
-
 - !grant
-  role: !group DemoVault/CICD-admins
+  role: !group DemoVault-admins
   members:
   - !host Sync_WIN-T4KRGHVATN4
-  - !user admin
-
-- !policy
-  id: DemoVault/CICD
-  owner: !group DemoVault/CICD-admins
