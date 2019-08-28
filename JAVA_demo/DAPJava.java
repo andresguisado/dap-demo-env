@@ -9,63 +9,65 @@ import java.net.URLEncoder;
 import java.util.Base64;
 import java.io.UnsupportedEncodingException;
 
-public class ConjurJava {
+public class DAPJava {
 
   /******************************************************************
    * 			PUBLIC MEMBERS
+   *
+   * void initJavaKeyStore(file,password) - opens Java key store containing server cert
+   * void initConnection(url,account) - sets private members for appliance URL and account 
+   * void getHealth() - basic DAP health check
+   * String authnLogin(uname,password) - Logs in human user with password, returns user's API key 
+   * void authenticate(name,apikey) - authenticates with API key, sets private access token member
+   * void setAccessToken(token) - sets private access token member, use with authn-k8s
+   * String variableValue(varname) - gets variable value by name using private members
+   *
    ******************************************************************/
 
-	/* ===============================================================
-	   void initJavaKeyStore - initializes Java key store containing server cert
-	*/
+	// ===============================================================
+	// void initJavaKeyStore() - opens Java key store containing server cert
+	//
 	public static void initJavaKeyStore(String _jksFile, String _jksPassword) {
 	  System.setProperty("javax.net.ssl.trustStore", _jksFile);
 	  System.setProperty("javax.net.ssl.trustStorePassword", _jksPassword);
 	  System.setProperty("javax.net.ssl.trustStoreType", "JKS");
 	}
 
-	/* ===============================================================
-	   void initConnection() - sets private appliance URL and account members
-	*/
+	// ===============================================================
+	// void initConnection() - sets private appliance URL and account members
+	//
 	public static void initConnection(String _applianceUrl, String _account) {
-	   conjurApplianceUrl = _applianceUrl;
-	   conjurAccount = _account;
+	   dapApplianceUrl = _applianceUrl;
+	   dapAccount = _account;
 	}
 
-	/* ===============================================================
-	   void setAccessToken() - sets private access token member, use with authn-k8s
-	*/
-	public static void setAccessToken(String _rawToken) {
-	  conjurAccessToken = base64Encode(_rawToken);
-	}
-
-	/* ===============================================================
-	   void getHealth() - basic health check
-	*/
+	// ===============================================================
+	// void getHealth() - basic health check
+	//
 	public static void getHealth() {
   	  System.out.println("Health output:" 
-			+ httpGet(conjurApplianceUrl + "/health", "") );
+			+ httpGet(dapApplianceUrl + "/health", "") );
 	}
 
-	/* ===============================================================
-	   String authnLogin() - Logs in human user with password, returns user's API key 
-	*/
+	// ===============================================================
+	// String authnLogin() - Logs in human user with password, returns user's API key 
+	//
 	public static String authnLogin(String _user, String _password) {
 	  String authHeader = "Basic " + base64Encode(_user + ":" + _password);
-	  String requestUrl = conjurApplianceUrl
-				+ "/authn/" + conjurAccount + "/login";
+	  String requestUrl = dapApplianceUrl
+				+ "/authn/" + dapAccount + "/login";
 	  String authnApiKey = httpGet(requestUrl, authHeader);
   	  // System.out.println("API key: " + authnApiKey);
 	  return authnApiKey;
 	}
 
-	/* ===============================================================
-	   void authenticate() - authenticates with API key, sets private access token member
-	*/
+	// ===============================================================
+	// void authenticate() - authenticates with API key, sets private access token member
+	//
 	public static void authenticate(String _authnLogin, String _apiKey) {
-	  String requestUrl = conjurApplianceUrl;
+	  String requestUrl = dapApplianceUrl;
 	  try {
-		requestUrl = requestUrl + "/authn/" + conjurAccount + "/" 
+		requestUrl = requestUrl + "/authn/" + dapAccount + "/" 
 				+ URLEncoder.encode(_authnLogin, "UTF-8")+ "/authenticate";
   	  	// System.out.println("Authenticate requestUrl: " + requestUrl);
 	  } catch (UnsupportedEncodingException e) {
@@ -74,18 +76,25 @@ public class ConjurJava {
 
 	  String rawToken = httpPost(requestUrl, _apiKey);
   	  // System.out.println("Raw token: " + rawToken);
-	  conjurAccessToken = base64Encode(rawToken);
-	  // System.out.println("Access token: " + conjurAccessToken);
+	  dapAccessToken = base64Encode(rawToken);
+	  // System.out.println("Access token: " + dapAccessToken);
 	}
 
-	/* ===============================================================
-	   String variableValue() - gets variable value by name using private members
-	*/
+	// ===============================================================
+	// void setAccessToken() - sets private access token member, use with authn-k8s
+	//
+	public static void setAccessToken(String _rawToken) {
+	  dapAccessToken = base64Encode(_rawToken);
+	}
+
+	// ===============================================================
+	// String variableValue() - gets variable value by name using private members
+	//
 	public static String variableValue(String _varId) {
-	  String authHeader = "Token token=\"" + conjurAccessToken + "\"";
-	  String requestUrl = conjurApplianceUrl;
+	  String authHeader = "Token token=\"" + dapAccessToken + "\"";
+	  String requestUrl = dapApplianceUrl;
 	  try {
-		requestUrl = requestUrl + "/secrets/" + conjurAccount 
+		requestUrl = requestUrl + "/secrets/" + dapAccount 
 				+ "/variable/" + URLEncoder.encode(_varId, "UTF-8");
   	  	// System.out.println("Variable requestUrl: " + requestUrl);
 	  } catch (UnsupportedEncodingException e) {
@@ -98,13 +107,13 @@ public class ConjurJava {
    * 			PRIVATE MEMBERS
    ******************************************************************/
 
-	 static private String conjurApplianceUrl;;
-	 static private String conjurAccount;
-	 static private String conjurAccessToken;
+	 static private String dapApplianceUrl;;
+	 static private String dapAccount;
+	 static private String dapAccessToken;
 
-	/* ===============================================================
-	   String httpGet() -
-	*/
+	// ===============================================================
+	// String httpGet() -
+	//
         private static String httpGet(String url_string, String auth_header) {
 	  String output = "";
 	  try {
@@ -140,9 +149,9 @@ public class ConjurJava {
 	} // httpGet()
 
 
-	/* ===============================================================
-	   String httpPost() -
-	*/
+	// ===============================================================
+	// String httpPost() -
+	//
         private static String httpPost(String url_string, String bodyContent) {
 	  String output = "";
 	  try {
@@ -181,9 +190,9 @@ public class ConjurJava {
 
 	} // httpPost()
 
-	/* ===============================================================
-	   String base64Encode() - base64 encodes argument and returns encoded string
-	*/
+	// ===============================================================
+	// String base64Encode() - base64 encodes argument and returns encoded string
+	//
 	private static String base64Encode(String input) {
 	  String encodedString = "";
 	  try {
@@ -194,4 +203,4 @@ public class ConjurJava {
 	  return encodedString;
 	} // base64Encode
 
-} // ConjurJava
+} // DAPJava

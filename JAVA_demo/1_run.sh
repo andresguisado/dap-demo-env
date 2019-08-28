@@ -12,6 +12,6 @@ yes
 EOF
 
 # run the app
-java -jar JavaDemo.jar
+java -jar JavaDemo.jar "$@"
 
 rm $JAVA_KEY_STORE_FILE
