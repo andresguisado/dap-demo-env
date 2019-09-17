@@ -7,6 +7,7 @@ clusters:
 contexts:
 - context:
     cluster: minikube
+    namespace: cust-portal
     user: minikube
   name: minikube
 current-context: minikube
@@ -15,6 +16,5 @@ preferences: {}
 users:
 - name: minikube
   user:
-    as-user-extra: {}
     client-certificate: /Users/josephhunt/Conjur/dap-demo-env/.minikube/client.crt
     client-key: /Users/josephhunt/Conjur/dap-demo-env/.minikube/client.key

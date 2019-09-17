@@ -5,7 +5,7 @@
 ##########################################
 
 SETUP_DIR=./conjur_setup
-DEMO_DIR=./demo
+DEMO_DIRS="./ruby ./python ./java"
 
 # sync local & remote config files 
 source $SETUP_DIR/aws.config
@@ -26,7 +26,9 @@ fi
 
 # Copy subdirectories to AWS
 scp -r -i $AWS_SSH_KEY $SETUP_DIR ubuntu@$AWS_PUB_DNS:~ 
-scp -r -i $AWS_SSH_KEY $DEMO_DIR ubuntu@$AWS_PUB_DNS:~ 
+for i in $DEMO_DIRS; do
+  scp -r -i $AWS_SSH_KEY $i ubuntu@$AWS_PUB_DNS:~ 
+done
 
 # exec to AWS EC2 instance to install & run demo
 ssh -i $AWS_SSH_KEY ubuntu@$AWS_PUB_DNS 

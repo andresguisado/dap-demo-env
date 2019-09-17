@@ -20,7 +20,6 @@ public class DAPJava {
    * String authnLogin(uname,password) - Logs in human user with password, returns user's API key 
    * void authenticate(name,apikey) - authenticates with API key, sets private access token member
    * void setAccessToken(token) - sets private access token member, use with authn-k8s
-   * String search(searchstr) - returns json array for variables where id or annotations match searchstr
    * String variableValue(varname) - gets variable value by name using private members
    *
    ******************************************************************/
@@ -46,7 +45,8 @@ public class DAPJava {
 	// void getHealth() - basic health check
 	//
 	public static void getHealth() {
-  	  System.out.println( httpGet(dapApplianceUrl + "/health", "") );
+  	  System.out.println("Health output:" 
+			+ httpGet(dapApplianceUrl + "/health", "") );
 	}
 
 	// ===============================================================
@@ -85,17 +85,6 @@ public class DAPJava {
 	//
 	public static void setAccessToken(String _rawToken) {
 	  dapAccessToken = base64Encode(_rawToken);
-	}
-
-	// ===============================================================
-	// String search() - returns json array for variables where id or annotations match searchStr
-	//
-	public static String search(String _searchStr) {
-	  String authHeader = "Token token=\"" + dapAccessToken + "\"";
-	  String requestUrl = dapApplianceUrl
-				+ "/resources/" + dapAccount + "?kind=variable" + "&search=" + _searchStr;
-	  // System.out.println("Search request: " + requestUrl);
-  	  return httpGet(requestUrl, authHeader);
 	}
 
 	// ===============================================================
@@ -142,10 +131,9 @@ public class DAPJava {
 		BufferedReader br = new BufferedReader(new InputStreamReader(
 			(conn.getInputStream())));
 
-		output = br.readLine();
-		String tmp; 
+		String tmp;
 		while ((tmp = br.readLine()) != null) {
-			output = output + System.lineSeparator() + tmp;
+			output = output + tmp;
 		}
 
 		conn.disconnect();

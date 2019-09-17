@@ -23,6 +23,11 @@
   - !variable aws-secret-key
   - !variable aws-creds-template
 
+# Permit node to access all CICD secrets synced from EPV
+- !grant
+  role: !group DemoVault/CICD/CICD_Secrets/delegation/consumers
+  member: !host client/node  
+
   # Permit node identity to retrieve secrets
 - !permit
   privileges: [ read, execute ]
@@ -37,6 +42,3 @@
   - !variable cicd-secrets/aws-access-key-id
   - !variable cicd-secrets/aws-secret-key
   - !variable cicd-secrets/aws-creds-template
-#  - !variable DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/username
-#  - !variable DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/password
-#  - !variable DemoVault/CICD/CICD_Secrets/SSH-minikube/password

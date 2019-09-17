@@ -12,7 +12,7 @@ main() {
   start_standbys
   haproxy_up
   cli_up
-  cluster_up
+#  cluster_up
   configure_standbys
   announce "The Conjur master endpoint is at: $CONJUR_MASTER_HOST_NAME:$CONJUR_MASTER_PORT"
   echo
@@ -41,14 +41,6 @@ master_up() {
     --volume $CONJUR_NGINX_VOLUME:/var/log/nginx \
     --security-opt seccomp:unconfined \
     $CONJUR_APPLIANCE_IMAGE
-
-  # turn of IPV6 listening in Master
-  docker exec $CONJUR_MASTER_CONTAINER_NAME \
-        /bin/sed -i 's/^.*\[\:\:\]\:80\;/  listen 127.0.0.1:80\;/' /etc/nginx/sites-enabled/conjur
-  docker exec $CONJUR_MASTER_CONTAINER_NAME \
-        /bin/sed -i 's/^.*\[\:\:1\]\:80\;//' /etc/nginx/sites-enabled/conjur
-  docker exec $CONJUR_MASTER_CONTAINER_NAME \
-        /bin/sed -i 's/^.*\[.*443.*//' /etc/conjur/nginx.d/00_ssl_port.conf
 
   docker network connect $CONJUR_NETWORK $CONJUR_MASTER_CONTAINER_NAME
 
