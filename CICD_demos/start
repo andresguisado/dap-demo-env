@@ -39,6 +39,8 @@ load_policy() {
 	conjur variable values add cicd-secrets/aws-secret-key 908089awssecretkey8098098
   docker exec $CLI_CONTAINER_NAME \
 	conjur variable values add cicd-secrets/aws-creds-template "$(cat aws-creds.template)"
+  docker exec $CLI_CONTAINER_NAME \
+	conjur variable values add cicd-secrets/aws-ssh-key "$(cat $AWS_SSH_KEY)"
 }
 
 generate_identity_files() {

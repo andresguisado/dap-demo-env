@@ -19,7 +19,7 @@ fi
 
 set_namespace $TEST_APP_NAMESPACE_NAME
 app_pod=$($cli get pods | grep "Running" | grep $pod_name_substr | awk '{print $1}')
-if [[ $PLATFORM == openshift ]]; then
+#if [[ $PLATFORM == openshift ]]; then
   case $BACKEND in
     pg )
       $cli exec -it $app_pod -- bash -c "tail -f /var/lib/pgsql/data/userdata/pg_log/postgresql-???.log"
@@ -31,4 +31,4 @@ if [[ $PLATFORM == openshift ]]; then
       $cli logs -f $app_pod
       ;;
    esac
-fi
+#fi

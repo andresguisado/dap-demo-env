@@ -1,0 +1,5 @@
+- !user DAPUser
+
+- !grant
+  role: !group DemoVault/CICD/CICD_Secrets/delegation/consumers 
+  members: !user DAPUser

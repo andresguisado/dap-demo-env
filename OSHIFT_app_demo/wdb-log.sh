@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash  -x
 . utils.sh
 
 if [[ $1 != pg && $1 != ms ]]; then
@@ -16,7 +16,6 @@ fi
 
 set_namespace $TEST_APP_NAMESPACE_NAME
 app_pod=$($cli get pods | grep "Running" | grep $pod_name_substr | awk '{print $1}')
-if [[ $PLATFORM == openshift ]]; then
   case $DB in
     pg )
       $cli exec -it $app_pod -- bash -c "tail -f /var/lib/pgsql/data/userdata/pg_log/postgresql-???.log"
@@ -25,4 +24,3 @@ if [[ $PLATFORM == openshift ]]; then
       $cli exec -it $app_pod -- bash -c "tail -f /var/lib/mysql/mysql.log"
       ;;
    esac
-fi

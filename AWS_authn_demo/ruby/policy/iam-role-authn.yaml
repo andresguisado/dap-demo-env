@@ -1,0 +1,25 @@
+# policy id needs to match the convention `conjur/authn-iam/<service ID>`
+- !policy
+  id: conjur/authn-iam/dev
+  body:
+  - !webservice
+
+  - !group clients
+
+  - !permit
+    role: !group clients
+    privilege: [ read, authenticate ]
+    resource: !webservice
+
+- !policy
+  id: lambda1
+  body:
+  # The host ID is the AWS acct # & IAM role we wish to authenticate.
+  - !host 313705343335/EC2SecretsAccess
+
+# add host to clients group authorized to call the authn-iam service
+- !grant
+  roles:
+  - !group conjur/authn-iam/dev/clients
+  members:
+  - !host lambda1/313705343335/EC2SecretsAccess

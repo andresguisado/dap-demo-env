@@ -11,11 +11,11 @@
   - !grant
     role: !layer webservers
     members:
-    - !host /conjur/authn-k8s/cle/apps/cust-portal/service_account/k8s-webserver
-    - !host /conjur/authn-k8s/cle/apps/cust-portal/service_account/ocp-webserver
+    - !host /conjur/authn-k8s/demo-cluster/apps/cust-portal/service_account/k8s-webserver
+    - !host /conjur/authn-k8s/demo-cluster/apps/cust-portal/service_account/ocp-webserver
 
   - !grant
     role: !layer appservers
     members:
-    - !host /conjur/authn-k8s/cle/apps/cust-portal/service_account/k8s-appserver
-    - !host /conjur/authn-k8s/cle/apps/cust-portal/service_account/ocp-appserver
+    - !host /conjur/authn-k8s/demo-cluster/apps/cust-portal/service_account/k8s-appserver
+    - !host /conjur/authn-k8s/demo-cluster/apps/cust-portal/service_account/ocp-appserver

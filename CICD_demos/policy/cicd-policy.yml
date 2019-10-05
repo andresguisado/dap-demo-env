@@ -22,6 +22,7 @@
   - !variable aws-access-key-id
   - !variable aws-secret-key
   - !variable aws-creds-template
+  - !variable aws-ssh-key
 
 # Permit node to access all CICD secrets synced from EPV
 - !grant
@@ -42,3 +43,4 @@
   - !variable cicd-secrets/aws-access-key-id
   - !variable cicd-secrets/aws-secret-key
   - !variable cicd-secrets/aws-creds-template
+  - !variable cicd-secrets/aws-ssh-key

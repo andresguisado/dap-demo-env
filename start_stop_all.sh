@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 if [[ "$1" != stop && "$1" != start ]]; then
   echo "Usage: $0 [ stop | start ]"
   exit -1
