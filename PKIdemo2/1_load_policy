@@ -1,0 +1,13 @@
+#!/bin/bash -eu
+
+docker exec conjur-cli bash -c "conjur authn login -u admin -p $CONJUR_ADMIN_PASSWORD"
+host_logins=$(./load_policy_REST.sh root ./cli/mutual_tls.yml)
+echo "$host_logins" > cli/host_logins
+
+server_password=$(cat cli/host_logins | jq -r '.created_roles | .["dev:host:mutual-tls/server"] | .api_key')
+client_password=$(cat cli/host_logins | jq -r '.created_roles | .["dev:host:mutual-tls/client"] | .api_key')
+
+echo "-------------------------------------------"
+echo "Server password: $server_password"
+echo "Client password: $client_password"
+echo "-------------------------------------------"

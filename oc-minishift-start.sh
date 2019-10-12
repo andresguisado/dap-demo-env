@@ -13,7 +13,7 @@ case $1 in
 	minishift stop
 
 	# enable app naps again
-#	defaults write NSGlobalDomain NSAppSleepDisabled -bool NO
+	defaults write NSGlobalDomain NSAppSleepDisabled -bool NO
 
 	exit 0
 	;;
@@ -33,7 +33,7 @@ case $1 in
 	fi
 
 	# disable mac app sleep mode
-#	defaults write NSGlobalDomain NSAppSleepDisabled -bool YES
+	defaults write NSGlobalDomain NSAppSleepDisabled -bool YES
 	;;
   * ) 
 	echo "Usage: $0 [ reinstall | start | stop | delete ]"

@@ -23,4 +23,4 @@ curl --data-binary "@ca/ca/ca-chain.crt" \
      -H "$auth_header" \
      "$CONJUR_APPLIANCE_URL/secrets/$CONJUR_ACCOUNT/variable/conjur/$CA_SERVICE_ID/ca/cert-chain"
 
-#rm -rf ca/ca
+rm -rf ca/ca

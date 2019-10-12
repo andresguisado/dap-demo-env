@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 set -eu pipefail
 
 rm -rf ca
@@ -9,7 +9,6 @@ openssl genrsa -aes256 \
 	-passout pass:root_p@55w0rD \
         -out ca/root.key 4096  >& /dev/null
 chmod 400 ca/root.key
-
 printf "\nGenerating root CA certificate..."
 openssl req -new -x509 -sha256 -days 730 \
         -config openssl.conf \

@@ -1,0 +1,3 @@
+machine https://conjur-master:30443/authn
+  login host/mutual-tls/client
+  password 3ex9yq2twr7821wahr331dnnd5z1w7c1ej9c5mmm256cz1bjvbhte

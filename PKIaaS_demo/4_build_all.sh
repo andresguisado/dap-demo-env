@@ -11,12 +11,12 @@ main() {
   docker exec -it conjur-cli conjur variable value mutual-tls/server/private-key > ./build/server/tls-private-key
   docker exec -it conjur-cli conjur variable value mutual-tls/server/cert > ./build/server/tls-cert
   docker-compose build server
-  rm ./build/server/tls*
+#  rm ./build/server/tls*
 
   # Conjurize client so it can retrieve TLS creds dynamically
   create_id_files client $MTLS_CLIENT_LOGIN ./build/client
   docker-compose build client
-  rm ./build/client/conjur*
+#  rm ./build/client/conjur*
 }
 
 create_id_files() {

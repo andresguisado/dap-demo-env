@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 export CONJUR_VERSION="5"
-export CONJUR_NAMESPACE_NAME="x"
-export CONJUR_ACCOUNT="x"
-export AUTHENTICATOR_ID="x"
-export TEST_APP_SERVICE_ACCOUNT="x"
-export TEST_APP_NAMESPACE_NAME="secretless-sidecar-test"
+export CONJUR_NAMESPACE_NAME="conjur"
+export CONJUR_ACCOUNT="dev"
+export AUTHENTICATOR_ID="dev"
+export TEST_APP_SERVICE_ACCOUNT="k8s-appserver"
+export TEST_APP_NAMESPACE_NAME="sidecar-test"
 export containerMode="sidecar"
 export CONJUR_APPLIANCE_URL="https://conjur-follower.${CONJUR_NAMESPACE_NAME}.svc.cluster.local/api"
 export CONJUR_AUTHN_URL="https://conjur-follower.${CONJUR_NAMESPACE_NAME}.svc.cluster.local/api/authn-k8s/${AUTHENTICATOR_ID}"
 export CONJUR_AUTHN_LOGIN=host/conjur/authn-k8s/${AUTHENTICATOR_ID}/apps/${TEST_APP_NAMESPACE_NAME}/service_account/${TEST_APP_SERVICE_ACCOUNT}
-export CONJUR_SSL_CERTIFICATE="--"
+export CONJUR_SSL_CERTIFICATE="~/.kube/conjur-cache/conjur-dev.pem"
 
 kubectl delete namespace --ignore-not-found ${TEST_APP_NAMESPACE_NAME}
 # create TEST_APP_NAMESPACE_NAME and label the namespace with cyberark-sidecar-injector=enabled
@@ -53,7 +53,7 @@ metadata:
     sidecar-injector.cyberark.com/containerMode: ${containerMode}
     sidecar-injector.cyberark.com/inject: "yes"
     sidecar-injector.cyberark.com/injectType: authenticator
-    sidecar-injector.cyberark.com/containerName: secretless
+    sidecar-injector.cyberark.com/containerName: injected
   labels:
     app: test-app
   name: test-app

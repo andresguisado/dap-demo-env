@@ -5,6 +5,9 @@ RUN apt-get update -y && \
       vim \
       curl
 
+ENV TZ America/Chicago
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 # install Summon and the Summon-conjur provider
 RUN cd /tmp \
     && curl -LO https://github.com/cyberark/summon/releases/download/v0.6.7/summon-linux-amd64.tar.gz \
