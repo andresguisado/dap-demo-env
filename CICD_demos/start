@@ -1,6 +1,7 @@
 #!/bin/bash 
 set -eo pipefail
 
+source ../config/dap.config
 source ./cicd-demo.conf
 
 main() {
@@ -13,34 +14,18 @@ main() {
 }
 
 load_policy() {
-  # login as admin
-  docker exec $CLI_CONTAINER_NAME bash -c "echo yes | conjur init -u $CONJUR_APPLIANCE_URL -a $CONJUR_ACCOUNT --force=true"
-  docker exec $CLI_CONTAINER_NAME conjur authn login -u admin -p $CONJUR_ADMIN_PASSWORD
-
-  # copy policy to CLI container
-  docker cp ./policy/cicd-policy.yml $CLI_CONTAINER_NAME:/policy/
-
   # load policy
-  docker exec $CLI_CONTAINER_NAME \
-	conjur policy load root /policy/cicd-policy.yml
+  load_policy_REST.sh root ./policy/cicd-policy.yml
 
-  # initialize variables
-  docker exec $CLI_CONTAINER_NAME \
-	conjur variable values add cicd-secrets/test-db-username ThisIsTheTESTDBuserName
-  docker exec $CLI_CONTAINER_NAME \
-	conjur variable values add cicd-secrets/test-db-password 10938471084710238470973
-  docker exec $CLI_CONTAINER_NAME \
-	conjur variable values add cicd-secrets/prod-db-username ThisIsThePRODDBuserName
-  docker exec $CLI_CONTAINER_NAME \
-	conjur variable values add cicd-secrets/prod-db-password aoiuaspduperjqkjnsoudoo
-  docker exec $CLI_CONTAINER_NAME \
-	conjur variable values add cicd-secrets/aws-access-key-id 909808awsaccesskeyid19238474
-  docker exec $CLI_CONTAINER_NAME \
-	conjur variable values add cicd-secrets/aws-secret-key 908089awssecretkey8098098
-  docker exec $CLI_CONTAINER_NAME \
-	conjur variable values add cicd-secrets/aws-creds-template "$(cat aws-creds.template)"
-  docker exec $CLI_CONTAINER_NAME \
-	conjur variable values add cicd-secrets/aws-ssh-key "$(cat $AWS_SSH_KEY)"
+  echo "Initializing variables..."
+  var_value_add_REST.sh cicd-secrets/test-db-username ThisIsTheTESTDBuserName
+  var_value_add_REST.sh cicd-secrets/test-db-password 10938471084710238470973
+  var_value_add_REST.sh cicd-secrets/prod-db-username ThisIsThePRODDBuserName
+  var_value_add_REST.sh cicd-secrets/prod-db-password aoiuaspduperjqkjnsoudoo
+  var_value_add_REST.sh cicd-secrets/aws-access-key-id 909808awsaccesskeyid19238474
+  var_value_add_REST.sh cicd-secrets/aws-secret-key 908089awssecretkey8098098
+  var_value_add_REST.sh cicd-secrets/aws-creds-template "$(cat aws-creds.template)"
+  var_value_add_REST.sh cicd-secrets/aws-ssh-key "$(cat $AWS_SSH_KEY)"
 }
 
 generate_identity_files() {
@@ -66,7 +51,7 @@ CONF_EOF
 }
 
 initialize_client_node() {
-  docker cp $CONJUR_CERT_FILE client_node:/etc
+  docker cp $MASTER_CERT_FILE client_node:/etc
   docker cp ./conjur.conf client_node:/etc
   docker cp ./conjur.identity client_node:/etc
   docker exec client_node chmod 400 /etc/conjur.identity

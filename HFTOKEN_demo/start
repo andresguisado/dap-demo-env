@@ -1,6 +1,16 @@
 #!/bin/bash 
 
-source ./hftoken-demo.config
+source ../config/dap.config
+
+export DEMO_CLIENT=demo-client
+
+check_env_var() {
+  var_name=$1
+  if [ "${!var_name}" = "" ]; then
+    echo "You must set $1 before running these scripts."
+    exit 1
+  fi
+}
 
 check_env_var "CONJUR_ACCOUNT"
 check_env_var "CONJUR_APPLIANCE_URL"

@@ -1,4 +1,6 @@
 #!/bin/bash 
+
+source ../config/dap.config
 source jenkins-demo.config
 
 docker-compose up -d

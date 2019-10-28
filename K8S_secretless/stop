@@ -1,0 +1,43 @@
+#!/bin/bash
+set -eo pipefail
+
+. ../config/dap.config
+. ../config/$PLATFORM.config
+. ../config/utils.sh
+
+if [ $PLATFORM = 'openshift' ]; then
+  oc login -u $OSHIFT_CLUSTER_ADMIN_USERNAME
+fi
+
+if ! has_namespace $TEST_APP_NAMESPACE_NAME; then
+  exit 0
+fi
+
+set_namespace $TEST_APP_NAMESPACE_NAME
+
+announce "Deleting Secretless deployment."
+$CLI delete --ignore-not-found secret test-app-secret
+$CLI delete --ignore-not-found secret dockerpullsecret
+
+$CLI delete --ignore-not-found \
+     service/postgres-db \
+     statefulset/postgres-db \
+     service/mysql-db \
+     statefulset/mysql-db \
+     service/nginx \
+     statefulset/nginx  \
+     deployment/test-app-secretless \
+     service/test-app-secretless \
+     service/test-secretless-app-backend \
+     configmap/test-app-secretless-config \
+     serviceaccount/$SECRETLESS_SERVICEACCOUNT_NAME \
+     &
+
+echo "Waiting for pods to terminate"
+while [[ "$($CLI get pods | grep postgres)" != "" ]]; do
+  sleep 4
+  echo -n '.'
+done
+echo
+
+echo "Secretless app deleted."

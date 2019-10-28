@@ -1,8 +1,8 @@
 class { conjur:
   account	     => 'dev',
-  appliance_url      => 'https://conjur-master:30443/api',
+  appliance_url      => 'https://conjur-master-mac:30443/api',
   authn_login        => "host/${::trusted['hostname']}",
-  host_factory_token => Sensitive('3m10tjb1hx831g34xp0ty1fq0hs43zqwqqz3jxncc61vx18kzcag5yg'),
+  host_factory_token => Sensitive('xe2ggw34jgp31xhgryc3th6h071czakr01amsq153g8c2853f9ee3e'),
   ssl_certificate    => file('/etc/conjur.pem'),
   version            => 5,
 }
