@@ -1,5 +1,6 @@
 #!/bin/bash 
 
+source ../config/dap.config
 source ./splunk-demo.config
 
 printf "\nBringng up splunk container...\n"

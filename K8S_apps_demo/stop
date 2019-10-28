@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 set -eo pipefail
 
 source ../config/dap.config
@@ -31,10 +31,10 @@ $CLI delete --ignore-not-found \
   -n $TEST_APP_NAMESPACE_NAME
 
 echo "Waiting for pods to terminate"
-until [[ "$($CLI get pods -n $TEST_APP_NAMESPACE_NAME 2>&1)" == "No resources found." ]]; do
+until [[ "$($CLI get pods -n $TEST_APP_NAMESPACE_NAME 2>&1 | grep test-app-summon)" == "" ]]; do
   sleep 4
   echo -n '.'
 done
 echo
 
-echo "Test app deleted."
+echo "Test apps deleted."

@@ -1,4 +1,5 @@
 #!/bin/bash
+source ../config/dap.config
 source ./splunk-demo.config
 docker stop splunk; docker rm splunk
 docker volume rm splunkvar
