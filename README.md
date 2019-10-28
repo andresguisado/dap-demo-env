@@ -4,8 +4,8 @@ General demo environment for DAP showing various tool and platform integrations.
 
 ## Configuration files - review and edit first
  - ./config/dap.config - master config file
- - ./config/openshift.config - config for minishift env
- - ./config/kubernetes.config - config for minikube env
+ - ./config/openshift.config - config for OCP env
+ - ./config/kubernetes.config - config for K8s env
  - ./config/utils.sh - utility bash functions, does not need editing
 
 ## Management scripts
@@ -39,8 +39,7 @@ General demo environment for DAP showing various tool and platform integrations.
  - HFTOKEN_demo - Host factory token lifecycle
 
 ## Works in progress (don't use)
- - wip_CONJUR_cli
  - wip_GO_demo
- - wip_OSHIFT_sideinjector
+ - wip_K8S_sideinjector
  - wip_PKIaaS_demo
  - wip_TOWER_demo
