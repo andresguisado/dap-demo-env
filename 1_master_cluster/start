@@ -117,7 +117,7 @@ load_policies() {
   "
   for i in $POLICY_FILE_LIST; do
         echo "Loading policy file: $i"
-        ../utils/load_policy_REST.sh root "$i"
+        load_policy_REST.sh root "$i"
   done
 
   echo "Conjur policies loaded."
@@ -180,9 +180,9 @@ follower_up() {
 ############################
 load_demo_policy() {
   # Laod policy & init variables
-  ../utils/load_policy_REST.sh root ./policy/demo-policy.yml
-  ../utils/var_value_add_REST.sh secrets/db-username "This-is-the-DB-username"
-  ../utils/var_value_add_REST.sh secrets/db-password $(openssl rand -hex 12)
+  load_policy_REST.sh root ./policy/demo-policy.yml
+  var_value_add_REST.sh secrets/db-username "This-is-the-DB-username"
+  var_value_add_REST.sh secrets/db-password $(openssl rand -hex 12)
 }
 
 ############################

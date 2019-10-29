@@ -1,0 +1,152 @@
+#!/usr/bin/env bash
+
+source ../../config/dap.config
+source ../../config/$PLATFORM.config
+source ../../config/utils.sh
+source ../injector.config
+
+main() {
+  ./stop
+  prepare_docker_images
+  load_policies
+  create_conjur_config_map
+  create_app_config_map
+  deploy_app
+}
+
+############################
+prepare_docker_images() {
+  announce "Building and pushing test app images."
+
+  registry_login
+
+  authenticator_image_tag=$(repo_image_tag conjur-authn-k8s-client $INJECTED_NAMESPACE_NAME)
+  docker tag $AUTHENTICATOR_CLIENT_IMAGE $authenticator_image_tag
+  docker push $authenticator_image_tag
+
+  pushd build
+      if $CONNECTED; then
+        ./build.sh
+      fi
+
+      test_app_image_tag=$(repo_image_tag test-app $INJECTED_NAMESPACE_NAME)
+      docker tag test-app:latest $test_app_image_tag
+      docker push $test_app_image_tag
+  popd
+}
+
+###################################
+#
+registry_login() {
+  if [[ "${PLATFORM}" = "openshift" ]]; then
+    docker login -u _ -p $(oc whoami -t) $DOCKER_REGISTRY_URL
+  else
+    if ! [ "${DOCKER_EMAIL}" = "" ]; then
+      $CLI delete --ignore-not-found secret dockerpullsecret
+      $CLI create secret docker-registry dockerpullsecret \
+           --docker-server=$DOCKER_REGISTRY_URL \
+           --docker-username=$DOCKER_USERNAME \
+           --docker-password=$DOCKER_PASSWORD \
+           --docker-email=$DOCKER_EMAIL
+    fi
+  fi
+}
+
+###########################
+#
+load_policies() {
+  announce "Initializing Conjur authorization policies..."
+
+  sed -e "s#{{ AUTHENTICATOR_ID }}#$AUTHENTICATOR_ID#g" \
+    ./policy/templates/service-accounts-whitelist.template.yml |
+    sed -e "s#{{ INJECTED_SERVICEACCOUNT_NAME }}#$INJECTED_SERVICEACCOUNT_NAME#g" |
+    sed -e "s#{{ INJECTED_NAMESPACE_NAME }}#$INJECTED_NAMESPACE_NAME#g" \
+    > ./policy/service-account-whitelist.yml
+
+  sed -e "s#{{ AUTHENTICATOR_ID }}#$AUTHENTICATOR_ID#g" \
+      ./policy/templates/app-to-service-account-mapping.template.yml |
+    sed -e "s#{{ INJECTED_NAMESPACE_NAME }}#$INJECTED_NAMESPACE_NAME#g" \
+    > ./policy/app-to-service-account-mapping.yml
+
+  sed -e "s#{{ AUTHENTICATOR_ID }}#$AUTHENTICATOR_ID#g" \
+      ./policy/templates/resource-access-grants.template.yml |
+    sed -e "s#{{ INJECTED_NAMESPACE_NAME }}#$INJECTED_NAMESPACE_NAME#g" \
+    > ./policy/resource-access-grants.yml
+
+  POLICY_FILE_LIST="
+policy/service-account-whitelist.yml
+policy/app-to-service-account-mapping.yml
+policy/resource-access-grants.yml
+"
+
+  for i in $POLICY_FILE_LIST; do
+    echo "Loading policy file: $i"
+    load_policy_REST.sh root "./$i"
+  done
+
+  echo "Conjur policies loaded."
+}
+
+###########################
+# Create conjur configmap 
+#
+create_conjur_config_map() {
+  echo "Creating Conjur config map..."
+  cat << EOL | $CLI -n ${INJECTED_NAMESPACE_NAME} apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "$CONJUR_CONFIG_MAP"
+data:
+  CONJUR_ACCOUNT: "${CONJUR_ACCOUNT}"
+  CONJUR_VERSION: "${CONJUR_VERSION}"
+  CONJUR_APPLIANCE_URL: "https://${CONJUR_FOLLOWER_SERVICE_NAME}"
+  CONJUR_AUTHN_URL: "https://$CONJUR_FOLLOWER_SERVICE_NAME/api/authn-k8s/${AUTHENTICATOR_ID}"
+  CONJUR_SSL_CERTIFICATE: |
+$(cat "${FOLLOWER_CERT_FILE}" | awk '{ print "    " $0 }')
+  CONJUR_AUTHN_TOKEN_FILE: "/run/conjur/conjur-access-token"
+EOL
+}
+
+###########################
+# Create app config map w/ authn url endpoint & login identity
+#
+create_app_config_map() {
+  echo "Creating application config map..."
+  cat << EOL | $CLI -n ${INJECTED_NAMESPACE_NAME} apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "${APP_CONFIG_MAP}"
+data:
+  CONJUR_AUTHN_LOGIN: "${CONJUR_AUTHN_LOGIN}"
+EOL
+}
+
+###########################
+# Deploy app
+#
+deploy_app() {
+  announce "Deploying application pod $INJECTED_APP_NAME..."
+  test_app_image_tag=$(repo_image_tag test-app $INJECTED_NAMESPACE_NAME)
+
+  sed -e "s#{{ INJECTED_NAMESPACE_NAME }}#$INJECTED_NAMESPACE_NAME#g" \
+    ./manifests/templates/test-app-injected.template.yaml |
+    sed -e "s#{{ INJECTOR_LABEL }}#$INJECTOR_LABEL#g" |
+    sed -e "s#{{ APP_CONFIG_MAP }}#$APP_CONFIG_MAP#g" |
+    sed -e "s#{{ CONJUR_CONFIG_MAP }}#$CONJUR_CONFIG_MAP#g" |
+    sed -e "s#{{ INJECTED_SERVICEACCOUNT_NAME }}#$INJECTED_SERVICEACCOUNT_NAME#g" |
+    sed -e "s#{{ INJECTED_APP_NAME }}#$INJECTED_APP_NAME#g" |
+    sed -e "s#{{ INJECTED_IMAGE_NAME }}#$test_app_image_tag#g" |
+    sed -e "s#{{ INJECTED_CONTAINER_MODE }}#$INJECTED_CONTAINER_MODE#g" |
+    sed -e "s#{{ INJECTED_CONTAINER_TYPE }}#$INJECTED_CONTAINER_TYPE#g" |
+    sed -e "s#{{ INJECTED_CONTAINER_NAME }}#$INJECTED_CONTAINER_NAME#g" \
+  > ./manifests/test-app-injected-$INJECTED_NAMESPACE_NAME.yaml
+  $CLI -n ${INJECTED_NAMESPACE_NAME} apply -f ./manifests/test-app-injected-$INJECTED_NAMESPACE_NAME.yaml
+
+  $CLI get namespace -L $INJECTOR_LABEL
+
+  kubectl -n ${INJECTED_NAMESPACE_NAME} get pods
+}
+
+main "$@"

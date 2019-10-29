@@ -22,7 +22,7 @@ General demo environment for DAP showing various tool and platform integrations.
 
 ## Demo directories
  - 1_master_cluster - starts master & cli in minishift/kube docker daemon
- - 2_epv_synchronizer - initializes new Conjur master for synchronizer
+ - 2_epv_synchronizer - initializes new DAP master for synchronizer
  - AIMCCP_demo - playbook that formats a REST call to CCP
  - AWS_authn_demo - sets up AWS authn-iam demo in AWS (separate master)
  - CICD_demos - general Summon demo w/ chef, ansible & terraform integration demos

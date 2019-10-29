@@ -1,0 +1,31 @@
+---
+##################
+# Duplicate access to secretless variables for injected app
+- !policy
+  id: test-app-secretless
+  annotations:
+    description: This policy defines the required creds to access DBs
+
+  body:
+    - &secretless-variables
+      - !variable pg-host
+      - !variable pg-port
+      - !variable pg-username
+      - !variable pg-password
+      - !variable pg-sslmode
+      - !variable mysql-host
+      - !variable mysql-port
+      - !variable mysql-username
+      - !variable mysql-password
+      - !variable mysql-sslmode
+      - !variable http-username
+      - !variable http-password
+
+    - !permit
+      role: !layer /{{ INJECTED_NAMESPACE_NAME }}/injected
+      privileges: [ read, execute ]
+      resources: *secretless-variables
+
+- !grant
+  role: !group DemoVault/CICD/CICD_Secrets/delegation/consumers
+  member: !layer /{{ INJECTED_NAMESPACE_NAME }}/injected
