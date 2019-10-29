@@ -71,7 +71,7 @@ spec:
         valueFrom:
           configMapKeyRef:
             name: {{ CONJUR_CONFIG_MAP }}
-            key: CONJUR_AUTHN_TOKEN_FILE
+            key: CONJUR_AUTHN_TOKEN_FILE_INJECTED
     volumeMounts:
     - mountPath: /run/conjur
       name: conjur-access-token

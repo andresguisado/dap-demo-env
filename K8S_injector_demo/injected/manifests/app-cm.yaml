@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: "testapps-config"
-data:
-  CONJUR_AUTHN_LOGIN: "host/conjur/authn-k8s/dev-atx/apps/injtest/service_account/k8s-appserver"

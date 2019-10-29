@@ -5,6 +5,10 @@ metadata:
   labels:
     app: test-app-summon-init
 spec:
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
   selector:
     app: test-app-summon-init
   type: LoadBalancer
@@ -48,27 +52,27 @@ spec:
             valueFrom:
               configMapKeyRef:
                 name: {{ CONJUR_CONFIG_MAP }}
-                key: conjur-version
+                key: CONJUR_VERSION
           - name: CONJUR_ACCOUNT
             valueFrom:
               configMapKeyRef:
                 name: {{ CONJUR_CONFIG_MAP }}
-                key: conjur-account
+                key: CONJUR_ACCOUNT
           - name: CONJUR_APPLIANCE_URL
             valueFrom:
               configMapKeyRef:
                 name: {{ CONJUR_CONFIG_MAP }}
-                key: conjur-follower-url
+                key: CONJUR_APPLIANCE_URL
           - name: CONJUR_SSL_CERTIFICATE
             valueFrom:
               configMapKeyRef:
                 name: {{ CONJUR_CONFIG_MAP }}
-                key: follower-certificate
+                key: CONJUR_SSL_CERTIFICATE
           - name: CONJUR_AUTHN_TOKEN_FILE
             valueFrom:
               configMapKeyRef:
                 name: {{ CONJUR_CONFIG_MAP }}
-                key: conjur-authn-token-file
+                key: CONJUR_AUTHN_TOKEN_FILE
         volumeMounts:
           - mountPath: /run/conjur
             name: conjur-access-token
@@ -101,22 +105,22 @@ spec:
             valueFrom:
               configMapKeyRef:
                 name: {{ CONJUR_CONFIG_MAP }}
-                key: conjur-version
+                key: CONJUR_VERSION
           - name: CONJUR_ACCOUNT
             valueFrom:
               configMapKeyRef:
                 name: {{ CONJUR_CONFIG_MAP }}
-                key: conjur-account
+                key: CONJUR_ACCOUNT
           - name: CONJUR_APPLIANCE_URL
             valueFrom:
               configMapKeyRef:
                 name: {{ CONJUR_CONFIG_MAP }}
-                key: conjur-follower-url
+                key: CONJUR_APPLIANCE_URL
           - name: CONJUR_SSL_CERTIFICATE
             valueFrom:
               configMapKeyRef:
                 name: {{ CONJUR_CONFIG_MAP }}
-                key: follower-certificate
+                key: CONJUR_SSL_CERTIFICATE
 
         # values from app config map
           - name: CONJUR_AUTHN_URL

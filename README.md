@@ -30,6 +30,7 @@ General demo environment for DAP showing various tool and platform integrations.
  - JENKINS_demo - Jenkins plugin demo
  - K8S_apps_demo - Demo app in k8s or Openshift (works for both)
  - K8S_followers - Follower installation in k8s or Openshift (works for both)
+ - K8S_injector_demo - Webhook sidecar injector for k8s
  - K8S_secretless_demo - Secretless demo app in k8s or Openshift (works for both)
  - POLICY_example - example policies showing best practices
  - PSM4C_demo - policy to setup access to EPV secrets for DAP user
@@ -40,6 +41,5 @@ General demo environment for DAP showing various tool and platform integrations.
 
 ## Works in progress (don't use)
  - wip_GO_demo
- - wip_K8S_sideinjector
  - wip_PKIaaS_demo
  - wip_TOWER_demo

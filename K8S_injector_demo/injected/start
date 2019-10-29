@@ -9,7 +9,7 @@ main() {
   ./stop
   prepare_docker_images
   load_policies
-  create_conjur_config_map
+  copy_conjur_config_map
   create_app_config_map
   deploy_app
 }
@@ -88,24 +88,12 @@ policy/resource-access-grants.yml
 }
 
 ###########################
-# Create conjur configmap 
-#
-create_conjur_config_map() {
-  echo "Creating Conjur config map..."
-  cat << EOL | $CLI -n ${INJECTED_NAMESPACE_NAME} apply -f -
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: "$CONJUR_CONFIG_MAP"
-data:
-  CONJUR_ACCOUNT: "${CONJUR_ACCOUNT}"
-  CONJUR_VERSION: "${CONJUR_VERSION}"
-  CONJUR_APPLIANCE_URL: "https://${CONJUR_FOLLOWER_SERVICE_NAME}"
-  CONJUR_AUTHN_URL: "https://$CONJUR_FOLLOWER_SERVICE_NAME/api/authn-k8s/${AUTHENTICATOR_ID}"
-  CONJUR_SSL_CERTIFICATE: |
-$(cat "${FOLLOWER_CERT_FILE}" | awk '{ print "    " $0 }')
-  CONJUR_AUTHN_TOKEN_FILE: "/run/conjur/conjur-access-token"
-EOL
+# create copy of conjur config map in the app namespace
+copy_conjur_config_map() {
+  $CLI delete --ignore-not-found cm $CONJUR_CONFIG_MAP -n $INJECTED_NAMESPACE_NAME
+  $CLI get cm $CONJUR_CONFIG_MAP -n default -o yaml \
+    | sed "s/namespace: default/namespace: $INJECTED_NAMESPACE_NAME/" \
+    | $CLI create -f -
 }
 
 ###########################

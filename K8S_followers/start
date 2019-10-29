@@ -162,25 +162,32 @@ initialize_conjur_config_map() {
   $CLI delete --ignore-not-found=true -n default configmap $CONJUR_CONFIG_MAP
 
   # get cert and echo to file for later use
-  master_cert="$(./get_cert_REST.sh $CONJUR_MASTER_HOST_NAME $CONJUR_MASTER_PORT)"
-  echo "$master_cert" > $MASTER_CERT_FILE
+  echo "$(get_cert_REST.sh $CONJUR_MASTER_HOST_NAME $CONJUR_MASTER_PORT)" > $MASTER_CERT_FILE
 
   # Set Conjur Master URL to docker host & port
-  master_url="https://$CONJUR_MASTER_HOST_NAME:$CONJUR_MASTER_PORT"
-  conjur_seed_file_url=$master_url/configuration/$CONJUR_ACCOUNT/seed/follower
+  CONJUR_MASTER_URL="https://$CONJUR_MASTER_HOST_NAME:$CONJUR_MASTER_PORT"
+  CONJUR_SEED_FILE_URL=$CONJUR_MASTER_URL/configuration/$CONJUR_ACCOUNT/seed/follower
 
-  $CLI create configmap $CONJUR_CONFIG_MAP \
-	-n default \
-        --from-literal=follower-namespace-name="$CONJUR_NAMESPACE_NAME" \
-        --from-literal=conjur-master-url=$master_url                    \
-        --from-literal=master-certificate="$master_cert"                \
-        --from-literal=conjur-seed-file-url="$conjur_seed_file_url"     \
-        --from-literal=conjur-authn-login-cluster="$CONJUR_CLUSTER_LOGIN" \
-        --from-literal=conjur-account="$CONJUR_ACCOUNT"                 \
-        --from-literal=conjur-version="$CONJUR_VERSION"                 \
-        --from-literal=conjur-authenticators="$CONJUR_AUTHENTICATORS"   \
-        --from-literal=authenticator-id="$AUTHENTICATOR_ID"             \
-        --from-literal=conjur-authn-token-file="/run/conjur/access-token"
+  cat << EOL1 | $CLI -n default apply -f - 
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "${CONJUR_CONFIG_MAP}"
+data:
+  FOLLOWER_NAMESPACE_NAME: "${CONJUR_NAMESPACE_NAME}"
+  CONJUR_ACCOUNT: "${CONJUR_ACCOUNT}"
+  CONJUR_VERSION: "${CONJUR_VERSION}"
+  CONJUR_MASTER_URL: "${CONJUR_MASTER_URL}"
+  CONJUR_MASTER_CERTIFICATE: |
+$(cat "${MASTER_CERT_FILE}" | awk '{ print "    " $0 }')
+  CONJUR_AUTHN_LOGIN_CLUSTER: "${CONJUR_CLUSTER_LOGIN}"
+  CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS}"
+  AUTHENTICATOR_ID: "${AUTHENTICATOR_ID}"
+  CONJUR_SEED_FILE_URL: "${CONJUR_SEED_FILE_URL}"
+  CONJUR_APPLIANCE_URL: "https://${CONJUR_FOLLOWER_SERVICE_NAME}"
+  CONJUR_AUTHN_URL: "https://${CONJUR_FOLLOWER_SERVICE_NAME}/api/authn-k8s/${AUTHENTICATOR_ID}"
+  CONJUR_AUTHN_TOKEN_FILE: "/run/conjur/conjur-access-token"
+EOL1
 
   echo "Conjur config map created."
 }
@@ -230,7 +237,7 @@ deploy_conjur_followers() {
   registry_login
   copy_conjur_config_map
   deploy_follower_pods
-  re_create_conjur_config_map
+  recreate_conjur_config_map
   echo "Followers created."
 }
 
@@ -262,12 +269,7 @@ deploy_follower_pods() {
     sed -e "s#{{ CONJUR_FOLLOWER_COUNT }}#${CONJUR_FOLLOWER_COUNT}#g" \
     > ./manifests/conjur-follower-$CONJUR_NAMESPACE_NAME.yaml
     $CLI apply -n $CONJUR_NAMESPACE_NAME -f ./manifests/conjur-follower-$CONJUR_NAMESPACE_NAME.yaml
-}
 
-###################################
-# Adds follower url & cert to Conjur config map
-#
-re_create_conjur_config_map() {
   # Wait for Follower to initialize
   echo "Waiting until Follower is ready (about 40 secs)."
   follower_pod_name=$($CLI get pods -n $CONJUR_NAMESPACE_NAME | grep conjur-follower | tail -1 | awk '{print $1}')
@@ -275,38 +277,46 @@ re_create_conjur_config_map() {
     echo -n "."; sleep 3
   done
   echo ""
+}
 
-  echo "Re-creating Conjur config map w/ Follower URL & cert."
-  $CLI delete --ignore-not-found=true -n default configmap $CONJUR_CONFIG_MAP
+###################################
+# recreate_conjur_config_map
+#
+recreate_conjur_config_map() {
 
-  # Get cached master cert from file
-  master_cert=$(cat "$MASTER_CERT_FILE")
+  # Must delete config map before recreating it
+  $CLI -n default delete cm ${CONJUR_CONFIG_MAP} --ignore-not-found
 
-  # cache Follower cert in file for later use
-  follower_cert="$($CLI exec -n $CONJUR_NAMESPACE_NAME $follower_pod_name -- cat /opt/conjur/etc/ssl/conjur.pem)"
-  echo "$follower_cert" > $FOLLOWER_CERT_FILE
+  CONJUR_FOLLOWER_CERT="$($CLI -n $CONJUR_NAMESPACE_NAME exec \
+		$follower_pod_name -- cat /opt/conjur/etc/ssl/conjur.pem)"
+  echo "$CONJUR_FOLLOWER_CERT" > $FOLLOWER_CERT_FILE  	# cache Follower cert in file for later use
 
-  master_url="https://$CONJUR_MASTER_HOST_NAME:$CONJUR_MASTER_PORT"
-  conjur_seed_file_url=$master_url/configuration/$CONJUR_ACCOUNT/seed/follower
-  follower_url="https://$CONJUR_FOLLOWER_SERVICE_NAME"
+  # Append Follower cert to config map 
+  cat << EOL2 | $CLI -n default create -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "${CONJUR_CONFIG_MAP}"
+data:
+  FOLLOWER_NAMESPACE_NAME: "${CONJUR_NAMESPACE_NAME}"
+  CONJUR_ACCOUNT: "${CONJUR_ACCOUNT}"
+  CONJUR_VERSION: "${CONJUR_VERSION}"
+  CONJUR_MASTER_URL: "${CONJUR_MASTER_URL}"
+  CONJUR_MASTER_CERTIFICATE: |
+$(cat "${MASTER_CERT_FILE}" | awk '{ print "    " $0 }')
+  CONJUR_AUTHN_LOGIN_CLUSTER: "${CONJUR_CLUSTER_LOGIN}"
+  CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS}"
+  AUTHENTICATOR_ID: "${AUTHENTICATOR_ID}"
+  CONJUR_SEED_FILE_URL: "${CONJUR_SEED_FILE_URL}"
+  CONJUR_APPLIANCE_URL: "https://${CONJUR_FOLLOWER_SERVICE_NAME}"
+  CONJUR_AUTHN_URL: "https://${CONJUR_FOLLOWER_SERVICE_NAME}/api/authn-k8s/${AUTHENTICATOR_ID}"
+  CONJUR_SSL_CERTIFICATE: |
+$(cat "${FOLLOWER_CERT_FILE}" | awk '{ print "    " $0 }')
+  CONJUR_AUTHN_TOKEN_FILE: "/run/conjur/access-token"
+  CONJUR_AUTHN_TOKEN_FILE_INJECTED: "/run/conjur/conjur-access-token"
+EOL2
 
-  # Create config map w/ master & follower service endpoint details
-  $CLI create configmap $CONJUR_CONFIG_MAP \
-	-n default \
-	--from-literal=follower-namespace-name="$CONJUR_NAMESPACE_NAME" \
-        --from-literal=conjur-master-url=$master_url 			\
-	--from-literal=master-certificate="$master_cert" 		\
-        --from-literal=conjur-seed-file-url="$conjur_seed_file_url" 	\
-        --from-literal=conjur-follower-url=$follower_url 		\
-	--from-literal=follower-certificate="$follower_cert" 		\
-        --from-literal=conjur-authn-login-cluster="$CONJUR_CLUSTER_LOGIN" \
-        --from-literal=conjur-account="$CONJUR_ACCOUNT" 		\
-        --from-literal=conjur-version="$CONJUR_VERSION" 		\
-        --from-literal=conjur-authenticators="$CONJUR_AUTHENTICATORS" 	\
-        --from-literal=authenticator-id="$AUTHENTICATOR_ID" 		\
-        --from-literal=conjur-authn-token-file="/run/conjur/access-token"
-
-  echo "Conjur config map recreated."
+  echo "Appended Follower cert to Conjur config map."
 }
 
 main "$@"

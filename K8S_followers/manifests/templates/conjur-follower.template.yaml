@@ -69,27 +69,27 @@ spec:
             valueFrom:
               configMapKeyRef:
                 name: {{ CONJUR_CONFIG_MAP }}
-                key: conjur-seed-file-url
+                key: CONJUR_SEED_FILE_URL
           - name: AUTHENTICATOR_ID
             valueFrom:
               configMapKeyRef:
                 name: {{ CONJUR_CONFIG_MAP }}
-                key: authenticator-id
+                key: AUTHENTICATOR_ID
           - name: CONJUR_ACCOUNT
             valueFrom:
               configMapKeyRef:
                 name: {{ CONJUR_CONFIG_MAP }}
-                key: conjur-account
+                key: CONJUR_ACCOUNT
           - name: CONJUR_SSL_CERTIFICATE
             valueFrom:
               configMapKeyRef:
                 name: {{ CONJUR_CONFIG_MAP }}
-                key: master-certificate
+                key: CONJUR_MASTER_CERTIFICATE
           - name: CONJUR_AUTHN_LOGIN
             valueFrom:
               configMapKeyRef:
                 name: {{ CONJUR_CONFIG_MAP }}
-                key: conjur-authn-login-cluster
+                key: CONJUR_AUTHN_LOGIN_CLUSTER
 
         volumeMounts:
           - name: seedfile
@@ -111,7 +111,7 @@ spec:
             valueFrom:
               configMapKeyRef:
                 name: {{ CONJUR_CONFIG_MAP }}
-                key: conjur-authenticators
+                key: CONJUR_AUTHENTICATORS
         resources:
           requests:
             cpu: "1"
