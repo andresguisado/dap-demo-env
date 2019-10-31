@@ -1,8 +1,8 @@
 #!/bin/bash
 
-source ../../config/dap.config
-source ../../config/$PLATFORM.config
-source ../injector.config
+source ../config/dap.config
+source ../config/$PLATFORM.config
+source ./injector.config
 
 $CLI -n $INJECTED_NAMESPACE_NAME delete pod $INJECTED_APP_NAME --ignore-not-found --force --grace-period=0 &> /dev/null
 $CLI -n $INJECTED_NAMESPACE_NAME delete cm $APP_CONFIG_MAP --ignore-not-found

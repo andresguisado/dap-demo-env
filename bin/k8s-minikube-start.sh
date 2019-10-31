@@ -1,5 +1,12 @@
 #!/bin/bash
 
+source ../config/dap.config
+source ../config/kubernetes.config
+
+export MINIKUBE_VM_MEMORY=4096
+export KUBERNETES_VERSION=v1.10.0
+export SSH_PUB_KEY=~/.ssh/id_dapdemo.pub
+
 if [[ $PLATFORM != kubernetes ]]; then
   echo "PLATFORM not set to 'kubernetes'."
   echo "Edit and source demo.config before running this script."
@@ -16,12 +23,12 @@ case $1 in
 	;;
   delete )
 	minikube delete 
-	rm -rf $KUBECONFIGDIR $DEMO_HOME/.minikube ~/.kube
+	rm -rf $KUBECONFIGDIR $DAP_HOME/.minikube ~/.kube
 	exit 0
 	;;
   reinstall )
 	minikube delete
-	rm -rf $KUBECONFIGDIR $DEMO_HOME/.minikube ~/.kube
+	rm -rf $KUBECONFIGDIR $DAP_HOME/.minikube ~/.kube
         unset KUBECONFIG
 	;;
   start )

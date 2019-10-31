@@ -14,6 +14,8 @@ repo_image_tag() {
   local namespace=$2
   if [ $PLATFORM = "openshift" ]; then
     echo "$DOCKER_REGISTRY_URL/$namespace/$image_name:$namespace"
+  elif $MINIKUBE; then
+    echo "$image_name"
   else
     echo "$DOCKER_REGISTRY_URL/$image_name:$namespace"
   fi

@@ -6,7 +6,7 @@ set -eo pipefail
 . ../config/utils.sh
 
 if [ $PLATFORM = 'openshift' ]; then
-  oc login -u $OSHIFT_CLUSTER_ADMIN_USERNAME
+  oc login -u $CLUSTER_ADMIN_USERNAME
 fi
 
 if ! has_namespace $TEST_APP_NAMESPACE_NAME; then

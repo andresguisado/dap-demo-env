@@ -1,9 +1,9 @@
 #!/bin/bash
 
-source ../../config/dap.config
-source ../../config/$PLATFORM.config
-source ../../config/utils.sh
-source ../injector.config
+source ../config/dap.config
+source ../config/$PLATFORM.config
+source ../config/utils.sh
+source ./injector.config
 
 case $1 in
 

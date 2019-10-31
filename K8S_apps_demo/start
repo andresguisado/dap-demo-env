@@ -66,7 +66,7 @@ configure_rbac() {
   echo "Configuring OpenShift developer permissions."
   oc adm policy add-role-to-user system:registry $DEVELOPER_USERNAME
   oc adm policy add-role-to-user system:image-builder $DEVELOPER_USERNAME
-  oc adm policy add-role-to-user admin $DEVELOPER_USERNAME -n default
+#  oc adm policy add-role-to-user admin $DEVELOPER_USERNAME -n default
   oc adm policy add-role-to-user admin $DEVELOPER_USERNAME -n $TEST_APP_NAMESPACE_NAME
 }
 
@@ -84,28 +84,6 @@ registry_login() {
            --docker-email=$DOCKER_EMAIL
     fi
   fi
-}
-
-############################
-prepare_docker_images() {
-  announce "Building and pushing test app images."
-
-  registry_login
-
-  # Tag authenticator image with registry/namespace prefix & namespace tag
-  authenticator_image_tag=$(repo_image_tag conjur-authn-k8s-client $TEST_APP_NAMESPACE_NAME)
-  docker tag $AUTHENTICATOR_CLIENT_IMAGE $authenticator_image_tag
-  docker push $authenticator_image_tag
-
-  pushd build
-      if $CONNECTED; then
-        ./build.sh
-      fi
-
-      test_app_image_tag=$(repo_image_tag test-app $TEST_APP_NAMESPACE_NAME) 
-      docker tag test-app:latest $test_app_image_tag
-      docker push $test_app_image_tag
-  popd
 }
 
 ############################
@@ -132,7 +110,6 @@ policy/project-authn-defs.yml
 policy/app-identity-defs.yml
 policy/resource-access-grants.yml
 "
-
   for i in $POLICY_FILE_LIST; do
     echo "Loading policy file: $i"
     load_policy_REST.sh root "./$i"
@@ -146,11 +123,37 @@ policy/resource-access-grants.yml
 }
 
 ############################
+prepare_docker_images() {
+  announce "Building and pushing test app images."
+
+  registry_login
+
+  if $CONNECTED; then
+    pushd build
+      ./build.sh
+    popd
+  fi
+
+  if ! $MINIKUBE; then
+    # Tag authenticator image with registry/namespace prefix & namespace tag
+    authenticator_image_tag=$(repo_image_tag conjur-authn-k8s-client $TEST_APP_NAMESPACE_NAME)
+    docker tag $AUTHENTICATOR_CLIENT_IMAGE $authenticator_image_tag
+    docker push $authenticator_image_tag
+
+    test_app_image_tag=$(repo_image_tag test-app $TEST_APP_NAMESPACE_NAME) 
+    docker tag test-app:latest $test_app_image_tag
+    docker push $test_app_image_tag
+  fi
+}
+
+############################
 deploy_test_app() {
   announce "Deploying test apps for $TEST_APP_NAMESPACE_NAME."
-  registry_login
   copy_conjur_config_map
   create_app_config_map
+
+  registry_login
+  prepare_docker_images
 
   deploy_sidecar_app
   deploy_init_container_app
@@ -199,8 +202,13 @@ deploy_sidecar_app() {
 
   sleep 5
 
-  test_app_image=$(repo_image_tag test-app $TEST_APP_NAMESPACE_NAME) 
-  authenticator_client_image=$(repo_image_tag conjur-authn-k8s-client $TEST_APP_NAMESPACE_NAME)
+  if $MINIKUBE; then
+    test_app_image="test-app:latest"
+    authenticator_client_image="$AUTHENTICATOR_CLIENT_IMAGE"
+  else
+    test_app_image=$(repo_image_tag test-app $TEST_APP_NAMESPACE_NAME) 
+    authenticator_client_image=$(repo_image_tag conjur-authn-k8s-client $TEST_APP_NAMESPACE_NAME)
+  fi
 
   sed -e "s#{{ TEST_APP_DOCKER_IMAGE }}#$test_app_image#g" \
       ./manifests/templates/test-app-summon-sidecar.template.yml |
@@ -227,8 +235,13 @@ deploy_init_container_app() {
 
   sleep 5
 
-  test_app_image=$(repo_image_tag test-app $TEST_APP_NAMESPACE_NAME) 
-  authenticator_client_image=$(repo_image_tag conjur-authn-k8s-client $TEST_APP_NAMESPACE_NAME)
+  if $MINIKUBE; then
+    test_app_image="test-app:latest"
+    authenticator_client_image="$AUTHENTICATOR_CLIENT_IMAGE"
+  else
+    test_app_image=$(repo_image_tag test-app $TEST_APP_NAMESPACE_NAME) 
+    authenticator_client_image=$(repo_image_tag conjur-authn-k8s-client $TEST_APP_NAMESPACE_NAME)
+  fi
 
   sed -e "s#{{ TEST_APP_DOCKER_IMAGE }}#$test_app_image#g" \
       ./manifests/templates/test-app-summon-init.template.yml |

@@ -1,0 +1,77 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: injtest
+  labels:
+    cyberark-sidecar-injector: enabled
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-app-injected
+  labels:
+    app: test-app-injected
+spec:
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+  selector:
+    app: test-app-injected
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: k8s-appserver
+  namespace: injtest
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    sidecar-injector.cyberark.com/conjurAuthConfig: testapps-config
+    sidecar-injector.cyberark.com/conjurConnConfig: conjur-config
+    sidecar-injector.cyberark.com/containerMode: sidecar
+    sidecar-injector.cyberark.com/inject: "yes"
+    sidecar-injector.cyberark.com/injectType: authenticator
+    sidecar-injector.cyberark.com/containerName: injected
+  labels:
+    app: test-app-injected
+  name: test-app-injected
+spec:
+  serviceAccountName: k8s-appserver
+  containers:
+  - image: test-app
+    name: app
+    env:
+    # values from DAP config map
+      - name: CONJUR_VERSION
+        valueFrom:
+          configMapKeyRef:
+            name: conjur-config
+            key: CONJUR_VERSION
+      - name: CONJUR_ACCOUNT
+        valueFrom:
+          configMapKeyRef:
+            name: conjur-config
+            key: CONJUR_ACCOUNT
+      - name: CONJUR_APPLIANCE_URL
+        valueFrom:
+          configMapKeyRef:
+            name: conjur-config
+            key: CONJUR_APPLIANCE_URL
+      - name: CONJUR_SSL_CERTIFICATE
+        valueFrom:
+          configMapKeyRef:
+            name: conjur-config
+            key: CONJUR_SSL_CERTIFICATE
+      - name: CONJUR_AUTHN_TOKEN_FILE
+        valueFrom:
+          configMapKeyRef:
+            name: conjur-config
+            key: CONJUR_AUTHN_TOKEN_FILE_INJECTED
+    volumeMounts:
+    - mountPath: /run/conjur
+      name: conjur-access-token

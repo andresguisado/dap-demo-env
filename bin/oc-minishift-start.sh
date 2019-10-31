@@ -1,6 +1,11 @@
 #!/bin/bash -e
 
-source ./demo.config
+source ../config/dap.config
+source ../config/openshift.config
+
+export MINISHIFT_VM_MEMORY=8GB
+export OPENSHIFT_VERSION=v3.9.0
+export SSH_PUB_KEY=~/.ssh/id_dapdemo.pub
 
 if [[ $PLATFORM != openshift ]]; then
   echo "Platform not set to 'openshift'."
@@ -19,12 +24,12 @@ case $1 in
 	;;
   delete )
 	minishift delete --clear-cache
-	rm -rf $KUBECONFIGDIR $DEMO_HOME/.minishift ~/.kube
+	rm -rf $KUBECONFIGDIR $DAP_HOME/.minishift ~/.kube
 	exit 0
 	;;
   reinstall )
 	minishift delete --clear-cache
-	rm -rf $KUBECONFIGDIR $DEMO_HOME/.minishift ~/.kube
+	rm -rf $KUBECONFIGDIR $DAP_HOME/.minishift ~/.kube
         unset KUBECONFIG
 	;;
   start )

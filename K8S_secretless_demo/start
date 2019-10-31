@@ -65,7 +65,6 @@ configure_rbac() {
   echo "Configuring OpenShift developer permissions."
   oc adm policy add-role-to-user system:registry $DEVELOPER_USERNAME
   oc adm policy add-role-to-user system:image-builder $DEVELOPER_USERNAME
-  oc adm policy add-role-to-user admin $DEVELOPER_USERNAME -n default
   oc adm policy add-role-to-user admin $DEVELOPER_USERNAME -n $TEST_APP_NAMESPACE_NAME
 }
 
@@ -93,26 +92,32 @@ prepare_docker_images() {
 
   secretless_broker_tag=$(repo_image_tag secretless-broker $TEST_APP_NAMESPACE_NAME)
   docker tag $SECRETLESS_BROKER_IMAGE $secretless_broker_tag
-  docker push $secretless_broker_tag
+  if ! $MINIKUBE; then
+    docker push $secretless_broker_tag
+  fi
 
   # entries in array correspond to names of directories under ./build/
   readonly APPS=(
+    "secretless-broker"
     "secretless"
     "pgsql"
     "mysql"
-    "nginx-ocp"
+    "nginx-secretless"
   )
 
   for app_name in "${APPS[@]}"; do
-    pushd ./build/$app_name
-      if $CONNECTED; then
+    if $CONNECTED; then
+      pushd ./build/$app_name
         ./build.sh
-      fi
+      popd
+    fi
 
-      test_app_image=$(repo_image_tag "$app_name" $TEST_APP_NAMESPACE_NAME)
-      docker tag $app_name:latest $test_app_image
+    test_app_image=$(repo_image_tag "$app_name" $TEST_APP_NAMESPACE_NAME)
+    docker tag $app_name:latest $test_app_image
+
+    if ! $MINIKUBE; then
       docker push $test_app_image
-    popd
+    fi
   done
 }
 
@@ -148,10 +153,6 @@ policy/resource-access-grants.yml
     load_policy_REST.sh root "./$i"
   done
 
-  # create initial value for variables
-  var_value_add_REST.sh k8s-secrets/db-username the-db-username
-  var_value_add_REST.sh k8s-secrets/db-password $(openssl rand -hex 12)
-
   echo "Conjur policies loaded."
 }
 
@@ -161,14 +162,13 @@ deploy_test_app() {
 
   set_namespace $TEST_APP_NAMESPACE_NAME
   init_registry_creds
-  init_connection_specs
 
-  # deploy secretless backend servers - ssh connects to minishift vm as backend
+  # deploy secretless backend servers 
   deploy_pg_database
   deploy_mysql_database
   deploy_nginx
+
   deploy_secretless_app
-#  initialize_injector
 }
 
 ###########################
@@ -191,7 +191,7 @@ init_registry_creds() {
     $CLI delete --ignore-not-found secrets dockerpullsecret
   
     $CLI secrets new-dockercfg dockerpullsecret \
-      --docker-server=${DOCKER_REGISTRY_PATH} \
+      --docker-server=${DOCKER_REGISTRY_URL} \
       --docker-username=_ \
       --docker-password=$($CLI whoami -t) \
       --docker-email=_
@@ -262,8 +262,9 @@ deploy_pg_database() {
     ./manifests/templates/postgres.template.yml |
     sed "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g" |
     sed "s#{{ IMAGE_PULL_POLICY }}#$IMAGE_PULL_POLICY#g" |
-    sed "s#{{ TEST_APP_DB_PASSWORD }}#$PG_DB_PASSWORD#g" |
-    $CLI create -f -
+    sed "s#{{ TEST_APP_DB_PASSWORD }}#$PG_DB_PASSWORD#g" \
+    > ./manifests/pgsql.yaml
+    $CLI create -f ./manifests/pgsql.yaml
 
     setup_pg_logging
 }
@@ -271,7 +272,6 @@ deploy_pg_database() {
 ###########################
 setup_pg_logging() {  #  Adds connection & disconnection logging
   wait_for_running_pod postgres-db-0
-  sleep 5 # allow for db startup
 
   # HACK ALERT: turn on connect/disconnect logging - not elegant but conf file doesn't exist in image
   if [ $PLATFORM = openshift ]; then
@@ -301,7 +301,7 @@ deploy_nginx() {
 
   echo "Deploying nginx backend"
 
-  nginx_image=$(repo_image_tag nginx-ocp $TEST_APP_NAMESPACE_NAME)
+  nginx_image=$(repo_image_tag nginx-secretless $TEST_APP_NAMESPACE_NAME)
 
   # Note: all server-side authn creds are provisioned in the image build
   # Which begs the question - how would you ever rotate that?
@@ -350,15 +350,6 @@ create_app_config_map() {
 }
 
 ###########################
-init_connection_specs() {
-  secretless_app_image=$(repo_image_tag secretless $TEST_APP_NAMESPACE_NAME)
-  secretless_broker_image=$(repo_image_tag secretless-broker $TEST_APP_NAMESPACE_NAME)
-  conjur_appliance_url=https://conjur-follower.$CONJUR_NAMESPACE_NAME.svc.cluster.local/api
-  conjur_authenticator_url=https://conjur-follower.$CONJUR_NAMESPACE_NAME.svc.cluster.local/api/authn-k8s/$AUTHENTICATOR_ID
-  conjur_authn_login_prefix=host/conjur/authn-k8s/$AUTHENTICATOR_ID/apps/$TEST_APP_NAMESPACE_NAME/service_account
-}
-
-###########################
 deploy_secretless_app() {
   $CLI delete --ignore-not-found \
     deployment/test-app-secretless \
@@ -376,6 +367,9 @@ deploy_secretless_app() {
     --from-file=etc/secretless.yml
 
   sleep 5
+
+  secretless_app_image=$(repo_image_tag secretless $TEST_APP_NAMESPACE_NAME)
+  secretless_broker_image=$(repo_image_tag secretless-broker $TEST_APP_NAMESPACE_NAME)
 
   sed -e "s#{{ SECRETLESS_BROKER_IMAGE }}#$secretless_broker_image#g" \
     ./manifests/templates/test-app-secretless.template.yml |

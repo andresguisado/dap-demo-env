@@ -1,0 +1,45 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: postgres-db
+  namespace: testapps
+spec:
+  selector:
+    app: postgres-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: postgres-db
+  labels:
+    app: postgres-db
+spec:
+  serviceName: postgres-db
+  selector:
+    matchLabels:
+      app: postgres-db
+  template:
+    metadata:
+      labels:
+        app: postgres-db
+    spec:
+      securityContext:
+        fsGroup: 999
+      containers:
+      - name: postgres-db
+        imagePullPolicy: IfNotPresent
+        image: pgsql
+        ports:
+          - containerPort: 5432
+        env:
+          - name: POSTGRES_USER
+            value: test_app
+          - name: POSTGRES_PASSWORD
+            value: 26a64a7090f4ef6cd6a8eb85
+          - name: POSTGRES_DB
+            value: test_app

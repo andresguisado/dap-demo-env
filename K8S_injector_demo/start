@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-source ../../config/dap.config
-source ../../config/$PLATFORM.config
-source ../../config/utils.sh
-source ../injector.config
+source ../config/dap.config
+source ../config/$PLATFORM.config
+source ../config/utils.sh
+source ./injector.config
 
 main() {
   ./stop
@@ -20,19 +20,22 @@ prepare_docker_images() {
 
   registry_login
 
+  if $CONNECTED; then
+    pushd build
+      ./build.sh
+    popd
+  fi
+
   authenticator_image_tag=$(repo_image_tag conjur-authn-k8s-client $INJECTED_NAMESPACE_NAME)
   docker tag $AUTHENTICATOR_CLIENT_IMAGE $authenticator_image_tag
-  docker push $authenticator_image_tag
 
-  pushd build
-      if $CONNECTED; then
-        ./build.sh
-      fi
+  test_app_image_tag=$(repo_image_tag test-app $INJECTED_NAMESPACE_NAME)
+  docker tag test-app:latest $test_app_image_tag
 
-      test_app_image_tag=$(repo_image_tag test-app $INJECTED_NAMESPACE_NAME)
-      docker tag test-app:latest $test_app_image_tag
-      docker push $test_app_image_tag
-  popd
+  if ! $MINIKUBE; then
+    docker push $authenticator_image_tag
+    docker push $test_app_image_tag
+  fi
 }
 
 ###################################
