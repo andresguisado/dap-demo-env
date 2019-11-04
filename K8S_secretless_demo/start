@@ -98,7 +98,6 @@ prepare_docker_images() {
 
   # entries in array correspond to names of directories under ./build/
   readonly APPS=(
-    "secretless-broker"
     "secretless"
     "pgsql"
     "mysql"

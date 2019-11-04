@@ -28,18 +28,16 @@ spec:
       labels:
         app: postgres-db
     spec:
-      securityContext:
-        fsGroup: 999
       containers:
       - name: postgres-db
         imagePullPolicy: IfNotPresent
-        image: pgsql
+        image: 192.168.1.143:5000/pgsql
         ports:
           - containerPort: 5432
         env:
           - name: POSTGRES_USER
             value: test_app
           - name: POSTGRES_PASSWORD
-            value: 26a64a7090f4ef6cd6a8eb85
+            value: d687d0f4bbc69b8bb07703f4
           - name: POSTGRES_DB
             value: test_app

@@ -4,7 +4,7 @@ source ../config/dap.config
 source ../config/kubernetes.config
 
 export MINIKUBE_VM_MEMORY=4096
-export KUBERNETES_VERSION=v1.10.0
+export KUBERNETES_VERSION=v1.11.10
 export SSH_PUB_KEY=~/.ssh/id_dapdemo.pub
 
 if [[ $PLATFORM != kubernetes ]]; then
@@ -49,11 +49,12 @@ else
   vboxmanage snapshot minikube list
   minikube start --memory "$MINIKUBE_VM_MEMORY" \
                   --vm-driver virtualbox \
-		  --loglevel $LOGLEVEL \
                   --kubernetes-version "$KUBERNETES_VERSION" \
-		  --extra-config=apiserver.admission-control="ServiceAccount,MutatingAdmissionWebhook" \
-		  --extra-config=controller-manager.ClusterSigningCertFile="/var/lib/localkube/certs/ca.crt" \
-		  --extra-config=controller-manager.ClusterSigningKeyFile="/var/lib/localkube/certs/ca.key"
+		  --extra-config=kubelet.config=/var/lib/kubelet/config.yaml \
+		  --extra-config=apiserver.admission-control="LimitRanger,NamespaceExists,NamespaceLifecycle,ResourceQuota,ServiceAccount,DefaultStorageClass,MutatingAdmissionWebhook"
+#		  --loglevel $LOGLEVEL \
+#		  --extra-config=controller-manager.ClusterSigningCertFile="/var/lib/localkube/certs/ca.crt" \
+#		  --extra-config=controller-manager.ClusterSigningKeyFile="/var/lib/localkube/certs/ca.key"
 
   if [[ ! -d $KUBECONFIGDIR ]]; then
     mkdir $KUBECONFIGDIR
@@ -77,7 +78,10 @@ minikube status
 # add public key to authorized keys for SSH demos
 echo "echo $(cat $SSH_PUB_KEY) >> ~/.ssh/authorized_keys; logout" | minikube ssh
 
+## Write Minishift docker & oc config values as env var inits to speed up env loading
+OUTPUT_FILE=$DAP_HOME/config/minikube.config
+minikube docker-env >> $OUTPUT_FILE
+
 echo ""
-echo "IMPORTANT!  IMPORTANT!  IMPORTANT!  IMPORTANT!"
-echo "You need to source kubernetes.config again to reference docker daemon in Minikube..."
+echo "Source $OUTPUT_FILE to point to docker daemon in minikube VM."
 echo ""

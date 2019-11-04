@@ -17,7 +17,7 @@ repo_image_tag() {
   elif $MINIKUBE; then
     echo "$image_name"
   else
-    echo "$DOCKER_REGISTRY_URL/$image_name:$namespace"
+    echo "$DOCKER_REGISTRY_URL/$image_name"
   fi
 }
 

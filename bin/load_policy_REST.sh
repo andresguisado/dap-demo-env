@@ -12,15 +12,28 @@ AUTHN_TOKEN=""
 # $1 - name of policy file to load
 main() {
 
-  if [[ $# -ne 2 ]] ; then
-    printf "\nUsage: %s <policy-branch-id> <policy-filename>\n" $0
+  if [[ $# < 2 ]] ; then
+    printf "\nUsage: %s <policy-branch-id> <policy-filename> [ delete | replace ]\n" $0
     printf "\nExamples:\n"
     printf "\t$> %s root /tmp/policy.yml\n" $0
     printf "\t$> %s dev/my-app /tmp/policy.yml\n" $0
+    printf "\nDefault is append mode, unless 'delete' or 'replace' is specified\n"
     exit -1
   fi
   local policy_branch=$1
   local policy_file=$2
+
+  local LOAD_MODE="POST"
+  if [[ $# == 3 ]]; then
+    case $3 in
+      delete)   LOAD_MODE="PATCH"
+		;;
+      replace)  LOAD_MODE="PUT"
+		;;
+      *)	printf "\nSpecify 'delete' or 'replace' as load mode options.\n\n"
+		exit -1
+    esac
+  fi
 
   authn_user   # authenticate user
   if [[ "$AUTHN_TOKEN" == "" ]]; then
@@ -30,20 +43,20 @@ main() {
 
   # The are SIGNIFICANT differences between PUT, POST and PATCH request methods:
   #
-  # - POST implements the default CLI policy load semantics. It adds data to 
+  # - POST implements the default CLI policy load APPEND semantics. It adds data to 
   #     the existing Conjur policy. Deletions are not allowed. Any policy 
   #     objects that exist on the server but that are omitted from the policy 
   #     file will not be deleted, and any explicit deletions in the policy 
   #     file will result in an error. While not destructive, use of this method
   #     can result in a policy file that does not reflect the actual policy
   #     in effect.
-  # - PATCH implements --delete CLI policy load flag semantics. It modifies an
+  # - PATCH implements the CLI policy load DELETE flag semantics. It modifies an
   #     existing Conjur policy. Data may be explicitly deleted using the 
   #     !delete, !revoke, and !deny statements. Unlike “replace” mode, no 
   #     data is ever implicitly deleted. Use of this method makes all policy
   #     changes explicit, supporting a kind of audit trail that shows the
   #     evolution of the policy.
-  # - PUT implements --replace CLI policy load flag semantics. Any policy data 
+  # - PUT implements the CLI policy load REPLACE flag semantics. Any policy data 
   #     which already exists on the server at the policy branch but that is not
   #     EXPLICITLY specified in the new policy file WILL BE DELETED. It is
   #     potentially very destructive and should be used with caution.
@@ -51,7 +64,7 @@ main() {
   curl -sk \
      -H "Content-Type: application/json" \
      -H "Authorization: Token token=\"$AUTHN_TOKEN\"" \
-     -X POST -d "$(< $policy_file)" \
+     -X $LOAD_MODE -d "$(< $policy_file)" \
      $CONJUR_APPLIANCE_URL/policies/$CONJUR_ACCOUNT/policy/$policy_branch
   echo
 }

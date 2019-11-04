@@ -28,8 +28,6 @@ spec:
       labels:
         app: postgres-db
     spec:
-      securityContext:
-        fsGroup: 999
       containers:
       - name: postgres-db
         imagePullPolicy: {{ IMAGE_PULL_POLICY }}

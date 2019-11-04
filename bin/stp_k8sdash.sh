@@ -1,2 +1,3 @@
 #!/bin/bash
-kubectl delete -f ./k8sdashboard.yaml
+source ../config/dap.config
+kubectl delete -f $DAP_HOME/bin/k8sdashboard.yaml

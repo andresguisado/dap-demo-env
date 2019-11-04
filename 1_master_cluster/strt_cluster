@@ -168,7 +168,7 @@ initialize_authn_k8s() {
   "
   for i in $POLICY_FILE_LIST; do
         echo "Loading policy file: $i"
-        ./load_policy_REST.sh root "$i"
+        load_policy_REST.sh root "$i"
   done
   echo "Conjur policies loaded."
 

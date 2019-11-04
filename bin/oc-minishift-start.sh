@@ -4,7 +4,7 @@ source ../config/dap.config
 source ../config/openshift.config
 
 export MINISHIFT_VM_MEMORY=8GB
-export OPENSHIFT_VERSION=v3.9.0
+export OPENSHIFT_VERSION=v3.11.0
 export SSH_PUB_KEY=~/.ssh/id_dapdemo.pub
 
 if [[ $PLATFORM != openshift ]]; then
@@ -24,12 +24,12 @@ case $1 in
 	;;
   delete )
 	minishift delete --clear-cache
-	rm -rf $KUBECONFIGDIR $DAP_HOME/.minishift ~/.kube
+	rm -rf $KUBECONFIGDIR ~/.minishift ~/.kube
 	exit 0
 	;;
   reinstall )
 	minishift delete --clear-cache
-	rm -rf $KUBECONFIGDIR $DAP_HOME/.minishift ~/.kube
+	rm -rf $KUBECONFIGDIR ~/.minishift ~/.kube
         unset KUBECONFIG
 	;;
   start )
@@ -85,13 +85,12 @@ echo "sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sl
 echo "echo $(cat $SSH_PUB_KEY) >> ~/.ssh/authorized_keys" | minishift ssh
 
 ## Write Minishift docker & oc config values as env var inits to speed up env loading
-OUTPUT_FILE=./minishift.config
+OUTPUT_FILE=$DAP_HOME/config/minishift.config
 minishift oc-env > $OUTPUT_FILE
 minishift docker-env >> $OUTPUT_FILE
 echo "export DOCKER_REGISTRY_PATH=$(minishift openshift registry)" >> $OUTPUT_FILE
 echo "export CONJUR_MASTER_HOST_IP=$(minishift ip)" >> $OUTPUT_FILE
 
 echo ""
-echo "IMPORTANT!  IMPORTANT!  IMPORTANT!  IMPORTANT!"
-echo "You need to source ../demo.config again to reference docker daemon in Minishift..."
+echo "Source $OUTPUT_FILE to point to docker daemon in minishift VM."
 echo ""

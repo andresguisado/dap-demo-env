@@ -17,8 +17,8 @@ main() {
   done
 #  configure_networking
   master_up
+  ./enable_master_for_k8s.sh
   cli_up
-  init_follower_authn
   follower_up
   load_demo_policy
 #  ./exec-into-cli.sh
@@ -56,14 +56,16 @@ master_up() {
 		--follower-altnames "$FOLLOWER_ALTNAMES" \
                 $CONJUR_ACCOUNT
 
+  echo "Caching DAP Master certificate..."
   mkdir -p $CACHE_DIR
-  echo "Caching Conjur master cert ..."
   rm -f $MASTER_CERT_FILE $FOLLOWER_CERT_FILE
   docker cp -L $CONJUR_MASTER_CONTAINER_NAME:/opt/conjur/etc/ssl/conjur.pem $MASTER_CERT_FILE
 
-  echo "Caching Conjur Follower seed files..."
+  echo "Caching Conjur Follower seed file..."
   rm -f $FOLLOWER_SEED_FILE
   docker exec $CONJUR_MASTER_CONTAINER_NAME evoke seed follower conjur-follower > $FOLLOWER_SEED_FILE
+
+  echo "Master configured."
 }
 
 #################
@@ -85,65 +87,6 @@ cli_up() {
   # Login as admin
   docker exec $CLI_CONTAINER_NAME \
     conjur authn login -u admin -p $CONJUR_ADMIN_PASSWORD
-}
-
-############################
-init_follower_authn() {
- load_policies
- initialize_ca
- whitelist_authenticators
- wait_till_master_is_responsive
-}
-
-###################################
-load_policies() {
-  echo "Initializing Conjur authorization policies..."
-
-  sed -e "s#{{ AUTHENTICATOR_ID }}#$AUTHENTICATOR_ID#g" \
-     ./policy/templates/cluster-authn-defs.template.yml |
-    sed -e "s#{{ CONJUR_NAMESPACE_NAME }}#$CONJUR_NAMESPACE_NAME#g" |
-    sed -e "s#{{ CONJUR_SERVICEACCOUNT_NAME }}#$CONJUR_SERVICEACCOUNT_NAME#g" \
-    > ./policy/cluster-authn-defs.yml
-
-  sed -e "s#{{ AUTHENTICATOR_ID }}#$AUTHENTICATOR_ID#g" \
-    ./policy/templates/seed-service.template.yml |
-    sed -e "s#{{ CONJUR_NAMESPACE_NAME }}#$CONJUR_NAMESPACE_NAME#g" |
-    sed -e "s#{{ CONJUR_SERVICEACCOUNT_NAME }}#$CONJUR_SERVICEACCOUNT_NAME#g" \
-    > ./policy/seed-service.yml
-
-  POLICY_FILE_LIST="
-  ./policy/cluster-authn-defs.yml
-  ./policy/seed-service.yml
-  "
-  for i in $POLICY_FILE_LIST; do
-        echo "Loading policy file: $i"
-        load_policy_REST.sh root "$i"
-  done
-
-  echo "Conjur policies loaded."
-}
-
-###################################
-initialize_ca() {
-  echo "Initializing CA in Conjur Master..."
-
-  docker exec $CONJUR_MASTER_CONTAINER_NAME \
-    chpst -u conjur conjur-plugin-service possum \
-      rake authn_k8s:ca_init["conjur/authn-k8s/$AUTHENTICATOR_ID"]
-
-  echo "CA initialized."
-}
-
-###################################
-whitelist_authenticators() {
-  echo "Updating list of whitelisted authenticators..."
-
-  docker exec $CONJUR_MASTER_CONTAINER_NAME bash -c \
-    "echo CONJUR_AUTHENTICATORS=\"authn,authn-k8s/$AUTHENTICATOR_ID\" >> \
-      /opt/conjur/etc/conjur.conf && \
-        sv restart conjur"
-
-  echo "Authenticators updated."
 }
 
 ############################
@@ -172,9 +115,11 @@ follower_up() {
   docker exec $CONJUR_FOLLOWER_CONTAINER_NAME \
 		evoke configure follower -p $CONJUR_MASTER_PORT
 
-  echo "Caching Conjur follower cert ..."
+  echo "Caching DAP Follower cert ..."
   rm -f $FOLLOWER_CERT_FILE
   docker cp -L $CONJUR_FOLLOWER_CONTAINER_NAME:/opt/conjur/etc/ssl/conjur-follower.pem $FOLLOWER_CERT_FILE
+
+  echo "Follower configured."
 }
 
 ############################
@@ -183,17 +128,6 @@ load_demo_policy() {
   load_policy_REST.sh root ./policy/demo-policy.yml
   var_value_add_REST.sh secrets/db-username "This-is-the-DB-username"
   var_value_add_REST.sh secrets/db-password $(openssl rand -hex 12)
-}
-
-############################
-wait_till_master_is_responsive() {
-  set +e
-  master_is_healthy=""
-  while [[ "$master_is_healthy" == "" ]]; do
-    sleep 2
-    master_is_healthy=$(docker exec -it conjur-cli curl -k $CONJUR_APPLIANCE_URL/health | grep "ok" | tail -1 | grep "true")
-  done
-  set -e
 }
 
 main "$@"
