@@ -1,0 +1,16 @@
+#!/bin/bash
+
+source ../config/dap.config
+source ../config/$PLATFORM.config
+source ./injector.config
+
+pushd injector_mgmt
+  echo "Deleting deployment..."
+  $CLI -n $INJECTOR_NAMESPACE_NAME delete -f deployment/deployment.yaml --ignore-not-found
+  echo "Deleting service..."
+  $CLI -n $INJECTOR_NAMESPACE_NAME delete -f deployment/service.yaml --ignore-not-found
+  echo "Deleting webhook certs..."
+  $CLI -n $INJECTOR_NAMESPACE_NAME delete -f deployment/mutatingwebhook-ca-bundle.yaml --ignore-not-found
+  echo "Deleting custom resource definition..."
+  $CLI -n $INJECTOR_NAMESPACE_NAME delete -f deployment/crd.yaml --ignore-not-found
+popd

@@ -7,35 +7,11 @@ source ./injector.config
 
 main() {
   ./stop
-  prepare_docker_images
   load_policies
   copy_conjur_config_map
   create_app_config_map
   deploy_app
-}
-
-############################
-prepare_docker_images() {
-  announce "Building and pushing test app images."
-
-  registry_login
-
-  if $CONNECTED; then
-    pushd build
-      ./build.sh
-    popd
-  fi
-
-  authenticator_image_tag=$(repo_image_tag conjur-authn-k8s-client $INJECTED_NAMESPACE_NAME)
-  docker tag $AUTHENTICATOR_CLIENT_IMAGE $authenticator_image_tag
-
-  test_app_image_tag=$(repo_image_tag test-app $INJECTED_NAMESPACE_NAME)
-  docker tag test-app:latest $test_app_image_tag
-
-  if ! $MINIKUBE; then
-    docker push $authenticator_image_tag
-    docker push $test_app_image_tag
-  fi
+  verify_authentication
 }
 
 ###################################
@@ -119,8 +95,6 @@ EOL
 #
 deploy_app() {
   announce "Deploying application pod $INJECTED_APP_NAME..."
-  test_app_image_tag=$(repo_image_tag test-app $INJECTED_NAMESPACE_NAME)
-
   sed -e "s#{{ INJECTED_NAMESPACE_NAME }}#$INJECTED_NAMESPACE_NAME#g" \
     ./manifests/templates/test-app-injected.template.yaml |
     sed -e "s#{{ INJECTOR_LABEL }}#$INJECTOR_LABEL#g" |
@@ -128,7 +102,7 @@ deploy_app() {
     sed -e "s#{{ CONJUR_CONFIG_MAP }}#$CONJUR_CONFIG_MAP#g" |
     sed -e "s#{{ INJECTED_SERVICEACCOUNT_NAME }}#$INJECTED_SERVICEACCOUNT_NAME#g" |
     sed -e "s#{{ INJECTED_APP_NAME }}#$INJECTED_APP_NAME#g" |
-    sed -e "s#{{ INJECTED_IMAGE_NAME }}#$test_app_image_tag#g" |
+    sed -e "s#{{ INJECTED_IMAGE_NAME }}#$TEST_APP_IMAGE#g" |
     sed -e "s#{{ INJECTED_CONTAINER_MODE }}#$INJECTED_CONTAINER_MODE#g" |
     sed -e "s#{{ INJECTED_CONTAINER_TYPE }}#$INJECTED_CONTAINER_TYPE#g" |
     sed -e "s#{{ INJECTED_CONTAINER_NAME }}#$INJECTED_CONTAINER_NAME#g" \
@@ -137,7 +111,18 @@ deploy_app() {
 
   $CLI get namespace -L $INJECTOR_LABEL
 
-  kubectl -n ${INJECTED_NAMESPACE_NAME} get pods
+  $CLI -n ${INJECTED_NAMESPACE_NAME} get pods
+
+  sleep 5	# give pods time to authenticate
+}
+
+###########################
+verify_authentication() {
+  clear
+  announce "Retrieving secrets with access token."
+  echo "With REST API: $($CLI -n $INJECTED_NAMESPACE_NAME exec -c app $INJECTED_APP_NAME -- /webapp.sh)"
+  echo "With Summon:"
+  echo "$($CLI -n $INJECTED_NAMESPACE_NAME exec -c app $INJECTED_APP_NAME -- summon /webapp_summon.sh)"
 }
 
 main "$@"

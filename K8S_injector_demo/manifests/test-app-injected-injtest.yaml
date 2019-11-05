@@ -43,7 +43,7 @@ metadata:
 spec:
   serviceAccountName: k8s-appserver
   containers:
-  - image: 192.168.1.143:5000/test-app
+  - image: 192.168.1.143:5000/test-app:latest
     name: app
     env:
     # values from DAP config map

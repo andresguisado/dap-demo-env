@@ -15,7 +15,6 @@ main() {
   configure_rbac
 
   login_as $DEVELOPER_USERNAME
-  prepare_docker_images
   load_policies
   deploy_test_app
 }
@@ -82,42 +81,6 @@ registry_login() {
            --docker-email=$DOCKER_EMAIL
     fi
   fi
-}
-
-############################
-prepare_docker_images() {
-  announce "Preparing Secretless app images..."
-
-  registry_login
-
-  secretless_broker_tag=$(repo_image_tag secretless-broker $TEST_APP_NAMESPACE_NAME)
-  docker tag $SECRETLESS_BROKER_IMAGE $secretless_broker_tag
-  if ! $MINIKUBE; then
-    docker push $secretless_broker_tag
-  fi
-
-  # entries in array correspond to names of directories under ./build/
-  readonly APPS=(
-    "secretless"
-    "pgsql"
-    "mysql"
-    "nginx-secretless"
-  )
-
-  for app_name in "${APPS[@]}"; do
-    if $CONNECTED; then
-      pushd ./build/$app_name
-        ./build.sh
-      popd
-    fi
-
-    test_app_image=$(repo_image_tag "$app_name" $TEST_APP_NAMESPACE_NAME)
-    docker tag $app_name:latest $test_app_image
-
-    if ! $MINIKUBE; then
-      docker push $test_app_image
-    fi
-  done
 }
 
 ############################

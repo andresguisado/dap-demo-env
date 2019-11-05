@@ -38,6 +38,6 @@ spec:
           - name: POSTGRES_USER
             value: test_app
           - name: POSTGRES_PASSWORD
-            value: d687d0f4bbc69b8bb07703f4
+            value: cacdcc16c195ce87fe43ba07
           - name: POSTGRES_DB
             value: test_app

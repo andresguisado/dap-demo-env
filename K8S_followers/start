@@ -24,6 +24,7 @@ main() {
 #
 check_dependencies() {
   check_env_var "CONJUR_APPLIANCE_IMAGE"
+  check_env_var "CONJUR_APPLIANCE_REG_IMAGE"
   check_env_var "CONJUR_NAMESPACE_NAME"
   check_env_var "AUTHENTICATOR_ID"
   check_env_var "DOCKER_REGISTRY_URL"
@@ -148,6 +149,10 @@ initialize_variables() {
 
 ###################################
 # Validates access to K8s API with service account credentials in DAP Master.
+# This function does three things:
+#   - tests secrets retrieval from the DAP Master
+#   - ensures the K8s API variables have correctly been populate
+#   - validates those credentials actually enable service account authentication
 #
 verify_k8s_api_access() {
   echo -n "Verifying service account access to K8s API..."
@@ -167,6 +172,11 @@ verify_k8s_api_access() {
   else
     echo
     echo ">>> Service account access to K8s API NOT verified. <<<"
+    echo "Values retrieved from DAP Master:"
+    echo " api-url: $API"
+    echo " service-account-token: $TOKEN"
+    echo " ca-cert:"
+    cat k8s.crt
     echo
     exit -1
   fi
@@ -220,27 +230,7 @@ registry_login() {
 deploy_follower_pods() {
   echo "Deploying Follower pod(s)..."
 
-  if $CONNECTED; then
-    announce "Building seed-fetcher image."
-    pushd build/seed-fetcher
-      ./build.sh
-    popd
-  fi
-
-  if $MINIKUBE; then
-    conjur_appliance_image=$CONJUR_APPLIANCE_IMAGE
-    seed_fetcher_image=$SEED_FETCHER_IMAGE
-  else
-    conjur_appliance_image=$(repo_image_tag conjur-appliance $CONJUR_NAMESPACE_NAME) 
-    docker tag $CONJUR_APPLIANCE_IMAGE $conjur_appliance_image
-    docker push $conjur_appliance_image
-
-    seed_fetcher_image=$(repo_image_tag seed-fetcher $CONJUR_NAMESPACE_NAME)
-    docker tag $SEED_FETCHER_IMAGE $seed_fetcher_image
-    docker push $seed_fetcher_image
-  fi
-
-  sed -e "s#{{ CONJUR_APPLIANCE_IMAGE }}#$conjur_appliance_image#g" \
+  sed -e "s#{{ CONJUR_APPLIANCE_IMAGE }}#$CONJUR_APPLIANCE_REG_IMAGE#g" \
      "./manifests/templates/conjur-follower.template.yaml" |
     sed -e "s#{{ AUTHENTICATOR_ID }}#$AUTHENTICATOR_ID#g" |
     sed -e "s#{{ IMAGE_PULL_POLICY }}#$IMAGE_PULL_POLICY#g" |
@@ -248,7 +238,7 @@ deploy_follower_pods() {
     sed -e "s#{{ CONJUR_MASTER_HOST_IP }}#$CONJUR_MASTER_HOST_IP#g" |
     sed -e "s#{{ CONJUR_MASTER_PORT }}#$CONJUR_MASTER_PORT#g" |
     sed -e "s#{{ CONJUR_SERVICEACCOUNT_NAME }}#$CONJUR_SERVICEACCOUNT_NAME#g" |
-    sed -e "s#{{ CONJUR_SEED_FETCHER_IMAGE }}#$seed_fetcher_image#g" |
+    sed -e "s#{{ CONJUR_SEED_FETCHER_IMAGE }}#$SEED_FETCHER_IMAGE#g" |
     sed -e "s#{{ CONJUR_CONFIG_MAP }}#$CONJUR_CONFIG_MAP#g" |
     sed -e "s#{{ CONJUR_FOLLOWER_COUNT }}#${CONJUR_FOLLOWER_COUNT}#g" \
     > ./manifests/conjur-follower-$CONJUR_NAMESPACE_NAME.yaml
