@@ -1,6 +1,9 @@
 #!/bin/bash
 
-source ../config/dap.config
+		# magic that sets DAP_HOME to parent directory of this script
+DAP_HOME="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
+source $DAP_HOME/config/dap.config
+source $DAP_HOME/config/$PLATFORM.config
 
 # Authenticates as admin user and sets value of a specified variable
 

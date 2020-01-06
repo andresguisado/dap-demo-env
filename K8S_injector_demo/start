@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 source ../config/dap.config
-source ../config/$PLATFORM.config
 source ../config/utils.sh
 source ./injector.config
 
@@ -94,12 +93,15 @@ EOL
 # Deploy app
 #
 deploy_app() {
+
   announce "Deploying application pod $INJECTED_APP_NAME..."
+
   sed -e "s#{{ INJECTED_NAMESPACE_NAME }}#$INJECTED_NAMESPACE_NAME#g" \
     ./manifests/templates/test-app-injected.template.yaml |
     sed -e "s#{{ INJECTOR_LABEL }}#$INJECTOR_LABEL#g" |
     sed -e "s#{{ APP_CONFIG_MAP }}#$APP_CONFIG_MAP#g" |
     sed -e "s#{{ CONJUR_CONFIG_MAP }}#$CONJUR_CONFIG_MAP#g" |
+    sed -e "s#{{ IMAGE_PULL_POLICY }}#$IMAGE_PULL_POLICY#g" |
     sed -e "s#{{ INJECTED_SERVICEACCOUNT_NAME }}#$INJECTED_SERVICEACCOUNT_NAME#g" |
     sed -e "s#{{ INJECTED_APP_NAME }}#$INJECTED_APP_NAME#g" |
     sed -e "s#{{ INJECTED_IMAGE_NAME }}#$TEST_APP_IMAGE#g" |

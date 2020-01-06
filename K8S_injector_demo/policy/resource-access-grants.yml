@@ -26,6 +26,6 @@
       privileges: [ read, execute ]
       resources: *secretless-variables
 
-- !grant
-  role: !group DemoVault/CICD/CICD_Secrets/delegation/consumers
-  member: !layer /injtest/injected
+#- !grant
+#  role: !group DemoVault/CICD/CICD_Secrets/delegation/consumers
+#  member: !layer /injtest/injected

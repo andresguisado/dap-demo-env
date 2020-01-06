@@ -28,6 +28,9 @@ spec:
       labels:
         app: postgres-db
     spec:
+      serviceAccountName: secretless-stateful-app
+      securityContext:
+        fsGroup: 999
       containers:
       - name: postgres-db
         imagePullPolicy: {{ IMAGE_PULL_POLICY }}

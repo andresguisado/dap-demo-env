@@ -28,6 +28,7 @@ spec:
       labels:
         app: mysql-db
     spec:
+      serviceAccountName: secretless-stateful-app
       containers:
       - name: mysql-db
         image: {{ IMAGE_NAME }}

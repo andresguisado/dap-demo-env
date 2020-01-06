@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eou pipefail
 
 source ../config/dap.config
 source ../config/$PLATFORM.config
@@ -11,11 +12,11 @@ source ../config/$PLATFORM.config
 NEW_AUTHENTICATOR="authn-k8s/$AUTHENTICATOR_ID"
 
 # For Master
-#DAP_NODE_CONTAINER_NAME=$CONJUR_MASTER_CONTAINER_NAME
-#DAP_NODE_URL=$CONJUR_APPLIANCE_URL
+DAP_NODE_CONTAINER_NAME=$CONJUR_MASTER_CONTAINER_NAME
+DAP_NODE_URL=$CONJUR_APPLIANCE_URL
 # For Follower
-DAP_NODE_CONTAINER_NAME=conjur-follower
-DAP_NODE_URL=https://$CONJUR_MASTER_HOST_NAME:$CONJUR_FOLLOWER_PORT
+#DAP_NODE_CONTAINER_NAME=conjur-follower
+#DAP_NODE_URL=https://$CONJUR_MASTER_HOST_NAME:$CONJUR_FOLLOWER_PORT
 
 #################
 main() {
@@ -23,6 +24,7 @@ main() {
   initialize_ca
   add_new_authenticator
   wait_till_node_is_responsive
+  curl -k $DAP_NODE_URL/info
 }
 
 ###################################
@@ -71,7 +73,9 @@ add_new_authenticator() {
   echo "Updating list of whitelisted authenticators..."
 					# get current authenticators in conjur.conf
   docker exec $DAP_NODE_CONTAINER_NAME cat /opt/conjur/etc/conjur.conf > temp.conf
-  authn_str=$(grep -i AUTHENTICATORS temp.conf)
+  set +e
+  authn_str=$(grep AUTHENTICATORS temp.conf)
+  set -e
 
   if [[ "$authn_str" == "" ]]; then	# If no authenticators specified...
 					# add authenticators to conjur.conf

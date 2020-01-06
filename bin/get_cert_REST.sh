@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [[ "$(which openssl)" == "" ]]; then
+  echo "OpenSSL not installed."
+  exit -1
+fi
 if [[ $# != 2 ]]; then
   echo "Usage: $0 <hostname> <port>"
   exit -1

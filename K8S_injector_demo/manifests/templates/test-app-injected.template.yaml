@@ -44,6 +44,7 @@ spec:
   serviceAccountName: {{ INJECTED_SERVICEACCOUNT_NAME }}
   containers:
   - image: {{ INJECTED_IMAGE_NAME }}
+    imagePullPolicy: {{ IMAGE_PULL_POLICY }}
     name: app
     env:
     # values from DAP config map

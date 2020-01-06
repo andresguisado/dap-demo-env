@@ -1,11 +1,15 @@
-#!/bin/bash
+#!/bin/bash -x
 set -euo pipefail
 
 cp /usr/bin/start-follower.sh \
    $SEEDFILE_DIR
 
 if [[ ! "${CONJUR_SEED_FILE_URL}" =~ ^http[s]?:// ]]; then
-    echo "WARN: Seed URL not found - assuming seedfile exists on the follower!"
+    if [[ "${CONJUR_SEED_FILE}" != "" ]]; then
+      echo ${CONJUR_SEED_FILE} | base64 -d > $SEEDFILE_DIR/follower-seed.tar
+    else
+      echo "WARN: Neither Seed URL nor File found - assuming seedfile exists on the follower!"
+    fi
     exit 0
 fi
 

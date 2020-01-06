@@ -1,0 +1,22 @@
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: cyberark-sidecar-injector
+  labels:
+    app: cyberark-sidecar-injector
+webhooks:
+  - name: sidecar-injector.cyberark.com
+    clientConfig:
+      service:
+        name: cyberark-sidecar-injector
+        namespace: injectors
+        path: "/mutate"
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM2akNDQWRLZ0F3SUJBZ0lCQVRBTkJna3Foa2lHOXcwQkFRc0ZBREFtTVNRd0lnWURWUVFEREJ0dmNHVnUKYzJocFpuUXRjMmxuYm1WeVFERTFOek0xTmprM05URXdIaGNOTVRreE1URXlNVFEwTWpNd1doY05NalF4TVRFdwpNVFEwTWpNeFdqQW1NU1F3SWdZRFZRUUREQnR2Y0dWdWMyaHBablF0YzJsbmJtVnlRREUxTnpNMU5qazNOVEV3CmdnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3Z2dFS0FvSUJBUUR3QmFRUGZWODNPV0lEM3pwRkozYTcKNk9SbHB0SmxTUlpIMTlLWVhocVAwMHlJbFMrOWYxZzAzYWt1dSsrOThVZDdBYURqYlJaaVpaRGthOW9taFFoVQpmZytnZ2EvR2hKSVdqSE9OU1h5UmYwQTVtemQxN3hTSHUyQm9zdDZlYm9CNkcwMmE5YUtjOGs0eG5yZzhuTW9tClJzL2plbjFoV051Q2JrcUhza1Z1U3UwSzNTWmlhYU51S0xFdVNZcjRsRWhRSjErSUlEQ3JZOURDQUlRK2JSZFkKdDhXOTBVdlVlVFR5VFBWbmd3TlRRYXBIdndoajlvczkrMkRqandONk5RUDA2WUxHZ2lqdEpjZ3dJMWhSTitGRAo4NURSVFhwN2ppajh5cDVuTG1SNndmZFJxTjRyLytqR1Vvc2RubFZkczZtSllXVUFxRGsxYjFRN2dqcWZZN1F6CkFnTUJBQUdqSXpBaE1BNEdBMVVkRHdFQi93UUVBd0lDcERBUEJnTlZIUk1CQWY4RUJUQURBUUgvTUEwR0NTcUcKU0liM0RRRUJDd1VBQTRJQkFRQjI0eHdFM0NhZlJzbjZLYmpSWS9RQjNXQjdLMmhOL3ZmdUFTZ2tVb01xaFBEZwpycU5VTEtHK0c5ajVDVXZBRHY0eG9UM1FuSG9FSUJtd2VuS2J5SVhUeE1BT1lEOTdHcUh2V1REOEZYZTRYZnJ3CnQwTEpnZXFuaUI5V0xWdG5uL1VwZ21YSVd6MkZRZXpGeStacEdyVGpoSHkxa2Z0R0taWG53ODhKaFFkdDJMZGgKUmllYzNBb3ovQWkrcHB3Q1RqbmNhalkvSXlveXpZY1gwY2NLSXRHbEpOb1VKdUtwVFhmWnhMRWJBQkI5dlA0VQoyR0dtcmx1MEV0cTMwKzB0YzlpbCtxTzVEZFlvejNIUnpPQzRCTjM4YzZhUjhRVzk3WjJxdnJnWFkvdnBBUTBhCjRONXdSN0VocGJOVGdJL25Eam5jSmdrcm1DejhFMWFSak1PRDBLaUoKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+    rules:
+      - operations: [ "CREATE" ]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["pods"]
+    namespaceSelector:
+      matchLabels:
+        cyberark-sidecar-injector: enabled

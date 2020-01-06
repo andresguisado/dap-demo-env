@@ -15,9 +15,11 @@ main() {
   start_standbys
   haproxy_up
   cli_up
-  initialize_authn_k8s
+  ./enable_dap_node_for_k8s.sh
   cluster_up
   configure_standbys
+  follower_up
+  load_demo_policy
   announce "The Conjur master endpoint is at: $CONJUR_MASTER_HOST_NAME:$CONJUR_MASTER_PORT"
   echo
 }
@@ -140,50 +142,11 @@ haproxy_up() {
     --privileged \
     --restart always \
     --entrypoint "/start.sh" \
-    haproxy:latest
+    $HAPROXY_IMAGE
 
   docker network connect $CONJUR_NETWORK $HAPROXY_CONTAINER_NAME
 
   docker restart $HAPROXY_CONTAINER_NAME
-}
-
-###################################
-initialize_authn_k8s() {
-  echo "Loading authn-k8s policies..."
-  sed -e "s#{{ AUTHENTICATOR_ID }}#$AUTHENTICATOR_ID#g" \
-     ./policy/templates/cluster-authn-defs.template.yml |
-    sed -e "s#{{ CONJUR_NAMESPACE_NAME }}#$CONJUR_NAMESPACE_NAME#g" |
-    sed -e "s#{{ CONJUR_SERVICEACCOUNT_NAME }}#$CONJUR_SERVICEACCOUNT_NAME#g" \
-    > ./policy/cluster-authn-defs.yml
-
-  sed -e "s#{{ AUTHENTICATOR_ID }}#$AUTHENTICATOR_ID#g" \
-    ./policy/templates/seed-service.template.yml |
-    sed -e "s#{{ CONJUR_NAMESPACE_NAME }}#$CONJUR_NAMESPACE_NAME#g" |
-    sed -e "s#{{ CONJUR_SERVICEACCOUNT_NAME }}#$CONJUR_SERVICEACCOUNT_NAME#g" \
-    > ./policy/seed-service.yml
-
-  POLICY_FILE_LIST="
-  ./policy/cluster-authn-defs.yml
-  ./policy/seed-service.yml
-  "
-  for i in $POLICY_FILE_LIST; do
-        echo "Loading policy file: $i"
-        load_policy_REST.sh root "$i"
-  done
-  echo "Conjur policies loaded."
-
-  echo "Initializing CA in Conjur Master..."
-  docker exec $CONJUR_MASTER_CONTAINER_NAME \
-    chpst -u conjur conjur-plugin-service possum \
-      rake authn_k8s:ca_init["conjur/authn-k8s/$AUTHENTICATOR_ID"]
-  echo "CA initialized."
-
-  echo "Updating list of whitelisted authenticators..."
-  docker exec $CONJUR_MASTER_CONTAINER_NAME bash -c \
-    "echo CONJUR_AUTHENTICATORS=\"authn,authn-k8s/$AUTHENTICATOR_ID\" >> \
-      /opt/conjur/etc/conjur.conf && \
-        sv restart conjur"
-  echo "Authenticators updated."
 }
 
 ############################
@@ -247,6 +210,47 @@ wait_till_master_is_responsive() {
     master_is_healthy=$(docker exec -it conjur-cli curl -k $CONJUR_APPLIANCE_URL/health | grep "ok" | tail -1 | grep "true")
   done
   set -e
+}
+
+############################
+follower_up() {
+  # Bring up Conjur Follower node
+  docker run -d \
+    --name $CONJUR_FOLLOWER_CONTAINER_NAME \
+    --label role=conjur_node \
+    -p "$CONJUR_FOLLOWER_PORT:443" \
+    -e "CONJUR_AUTHENTICATORS=$CONJUR_AUTHENTICATORS" \
+    --restart always \
+    --security-opt seccomp:unconfined \
+    $CONJUR_APPLIANCE_IMAGE
+
+  if $NO_DNS; then
+    # add entry to follower's /etc/hosts so $CONJUR_MASTER_HOST_NAME resolves
+    docker exec -it $CONJUR_FOLLOWER_CONTAINER_NAME \
+	bash -c "echo \"$CONJUR_MASTER_HOST_IP $CONJUR_MASTER_HOST_NAME\" >> /etc/hosts"
+  fi
+
+  echo "Initializing Conjur Follower"
+  docker cp $FOLLOWER_SEED_FILE \
+		$CONJUR_FOLLOWER_CONTAINER_NAME:/tmp/follower-seed.tar
+  docker exec $CONJUR_FOLLOWER_CONTAINER_NAME \
+		evoke unpack seed /tmp/follower-seed.tar
+  docker exec $CONJUR_FOLLOWER_CONTAINER_NAME \
+		evoke configure follower -p $CONJUR_MASTER_PORT
+
+  echo "Caching DAP Follower cert ..."
+  rm -f $FOLLOWER_CERT_FILE
+  docker cp -L $CONJUR_FOLLOWER_CONTAINER_NAME:/opt/conjur/etc/ssl/conjur-follower.pem $FOLLOWER_CERT_FILE
+
+  echo "Follower configured."
+}
+
+############################
+load_demo_policy() {
+  # Laod policy & init variables
+  load_policy_REST.sh root ./policy/demo-policy.yml
+  var_value_add_REST.sh secrets/db-username "This-is-the-DB-username"
+  var_value_add_REST.sh secrets/db-password $(openssl rand -hex 12)
 }
 
 main $@

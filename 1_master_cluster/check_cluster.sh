@@ -30,7 +30,7 @@ for conjur_node in $containers; do
     health_output=$(docker exec $conjur_node curl -sk http://localhost/health)
     lag_bytes=$(echo $health_output | jq -Mr .database.replication_status.pg_stat_replication[].replication_lag_bytes)
     echo "Lag bytes: $lag_bytes"
-    if (( lag_bytes < "0" )); then
+    if (( $lag_bytes < 0 )); then
       echo "lag_bytes count < 0."
     fi
   fi

@@ -8,7 +8,7 @@
   privileges: [ read, execute ]
   roles:
   - !group masters
-  - !layer prod/app1/nodes
+  - !group prod/app1/nodes
   resources:
   - !variable common-secret1
   - !variable common-secret2

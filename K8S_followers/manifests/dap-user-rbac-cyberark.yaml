@@ -1,0 +1,26 @@
+# Cluster role to enable users in other projects to access to the DAP config map
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: dap-cmaccess
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  resourceNames: ["conjur-config"]
+  verbs: ["get", "list"]
+
+# Role binding to give namespace admin rights to user: dapadmin
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: project-admin-access-binding
+  namespace: cyberark
+subjects:
+- kind: User
+  name: "dapadmin"
+roleRef:
+  kind: ClusterRole
+  name: admin
+  apiGroup: rbac.authorization.k8s.io

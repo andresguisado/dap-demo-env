@@ -8,13 +8,13 @@
     description: Application 1
   body:
 
-  # define app layer and host(s)
-  - !layer nodes
+  # define app group and host(s)
+  - !group nodes
   - !host node
 
   # grant app role to host(s)
   - !grant
-    role: !layer nodes
+    role: !group nodes
     members:
     - !host node
     - !group /masters
@@ -28,5 +28,5 @@
   - !permit
     privileges: [ read, execute ]
     roles:
-    - !layer nodes
+    - !group nodes
     resources: *variables

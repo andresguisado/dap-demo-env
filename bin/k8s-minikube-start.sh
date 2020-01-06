@@ -1,9 +1,11 @@
 #!/bin/bash
 
-source ../config/dap.config
-source ../config/kubernetes.config
+DAP_HOME="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
 
-export MINIKUBE_VM_MEMORY=4096
+source $DAP_HOME/config/dap.config
+source $DAP_HOME/config/kubernetes.config
+
+export MINIKUBE_VM_MEMORY=6144
 export KUBERNETES_VERSION=v1.11.10
 export SSH_PUB_KEY=~/.ssh/id_dapdemo.pub
 
@@ -23,12 +25,12 @@ case $1 in
 	;;
   delete )
 	minikube delete 
-	rm -rf $KUBECONFIGDIR $DAP_HOME/.minikube ~/.kube
+	rm -rf $KUBECONFIGDIR ~/.minikube ~/.kube
 	exit 0
 	;;
   reinstall )
 	minikube delete
-	rm -rf $KUBECONFIGDIR $DAP_HOME/.minikube ~/.kube
+	rm -rf $KUBECONFIGDIR ~/.minikube ~/.kube
         unset KUBECONFIG
 	;;
   start )
@@ -49,9 +51,9 @@ else
   vboxmanage snapshot minikube list
   minikube start --memory "$MINIKUBE_VM_MEMORY" \
                   --vm-driver virtualbox \
-                  --kubernetes-version "$KUBERNETES_VERSION" \
-		  --extra-config=kubelet.config=/var/lib/kubelet/config.yaml \
-		  --extra-config=apiserver.admission-control="LimitRanger,NamespaceExists,NamespaceLifecycle,ResourceQuota,ServiceAccount,DefaultStorageClass,MutatingAdmissionWebhook"
+                  --kubernetes-version "$KUBERNETES_VERSION"
+#		  --extra-config=kubelet.config=/var/lib/kubelet/config.yaml \
+#		  --extra-config=apiserver.admission-control="LimitRanger,NamespaceExists,NamespaceLifecycle,ResourceQuota,ServiceAccount,DefaultStorageClass,MutatingAdmissionWebhook"
 #		  --loglevel $LOGLEVEL \
 #		  --extra-config=controller-manager.ClusterSigningCertFile="/var/lib/localkube/certs/ca.crt" \
 #		  --extra-config=controller-manager.ClusterSigningKeyFile="/var/lib/localkube/certs/ca.key"

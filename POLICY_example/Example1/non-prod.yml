@@ -6,10 +6,7 @@
   body:
   - !group admins
 
-  - !layer hosts
-  - !host-factory
-    id: hosts
-    layers: [ !layer hosts ]
+  - !group hosts
 
   - &variables
     - !variable common-non-prod-secret1
@@ -18,5 +15,5 @@
   - !permit
     privileges: [ read, execute ]
     roles:
-    - !layer hosts
+    - !group hosts
     resources: *variables

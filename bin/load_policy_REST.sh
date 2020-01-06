@@ -1,6 +1,8 @@
 #!/bin/bash
 
-source ../config/dap.config
+		# magic that sets DAP_HOME to parent directory of this script
+DAP_HOME="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
+source $DAP_HOME/config/dap.config
 
 # Authenticates as admin user and loads policy file 
 

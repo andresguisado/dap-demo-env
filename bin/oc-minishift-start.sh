@@ -1,11 +1,15 @@
 #!/bin/bash -e
 
-source ../config/dap.config
-source ../config/openshift.config
+rm -f $DAP_HOME/config/minishift.config
+
+		# magic that sets DAP_HOME to parent directory of this script
+DAP_HOME="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
+source $DAP_HOME/config/dap.config
 
 export MINISHIFT_VM_MEMORY=8GB
 export OPENSHIFT_VERSION=v3.11.0
 export SSH_PUB_KEY=~/.ssh/id_dapdemo.pub
+export MINISHIFT_CACHE_TARFILE=~/conjur-install-images/minishift-3.11-cache.tar.gz
 
 if [[ $PLATFORM != openshift ]]; then
   echo "Platform not set to 'openshift'."
@@ -30,15 +34,19 @@ case $1 in
   reinstall )
 	minishift delete --clear-cache
 	rm -rf $KUBECONFIGDIR ~/.minishift ~/.kube
+	if [[ -f ${MINISHIFT_CACHE_TARFILE} ]]; then
+	  echo -n "Restoring cached images from ${MINISHIFT_CACHE_TARFILE}..."
+	  mkdir ~/.minishift && cd ~/.minishift && tar xvf ${MINISHIFT_CACHE_TARFILE}
+	  echo "done."
+	fi
         unset KUBECONFIG
+
 	;;
   start )
 	if [[ ! -f $KUBECONFIG ]]; then
 	  unset KUBECONFIG
 	fi
-
-	# disable mac app sleep mode
-	defaults write NSGlobalDomain NSAppSleepDisabled -bool YES
+	rm -rf ~/.kube
 	;;
   * ) 
 	echo "Usage: $0 [ reinstall | start | stop | delete ]"
@@ -76,6 +84,9 @@ eval $(minishift docker-env)
 set +e
 docker rm $(docker container ls -a | grep Exited | awk '{print $1}')
 set -e
+
+# disable mac app sleep mode
+defaults write NSGlobalDomain NSAppSleepDisabled -bool YES
 
 # turn off auto-sleep & install ntpdate in minishift VM and sync its clock
 echo "sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target; \

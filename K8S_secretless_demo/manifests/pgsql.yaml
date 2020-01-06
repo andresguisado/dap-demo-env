@@ -28,16 +28,19 @@ spec:
       labels:
         app: postgres-db
     spec:
+      serviceAccountName: secretless-stateful-app
+      securityContext:
+        fsGroup: 999
       containers:
       - name: postgres-db
         imagePullPolicy: IfNotPresent
-        image: 192.168.1.143:5000/pgsql
+        image: 172.30.1.1:5000/pgsql:latest
         ports:
           - containerPort: 5432
         env:
           - name: POSTGRES_USER
             value: test_app
           - name: POSTGRES_PASSWORD
-            value: cacdcc16c195ce87fe43ba07
+            value: 99cb8bdc670f853f993ecca3
           - name: POSTGRES_DB
             value: test_app

@@ -41,10 +41,13 @@ registry_login() {
 ###################################
 tag_and_push() {
   # tag & push local K8S_followers images to registry
-  docker tag $LOCAL_TEST_APP_IMAGE_NAME $TEST_APP_IMAGE
-  docker push $TEST_APP_IMAGE
+  docker tag $LOCAL_TEST_APP_IMAGE $TEST_APP_IMAGE
   docker tag $LOCAL_AUTHENTICATOR_CLIENT_IMAGE $AUTHENTICATOR_CLIENT_IMAGE
-  docker push $AUTHENTICATOR_CLIENT_IMAGE
+
+  if ! $MINIKUBE; then
+    docker push $TEST_APP_IMAGE
+    docker push $AUTHENTICATOR_CLIENT_IMAGE
+  fi
 }
 
 main "$@"

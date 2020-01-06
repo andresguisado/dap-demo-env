@@ -1,0 +1,16 @@
+# Name: istio
+# Description: UnDeploys Istio
+# Url: https://github.com/istio/istio
+
+oc project istio-operator
+oc delete -n istio-operator installation istio-installation
+
+sleep 30
+
+oc delete all -l minishift-addon=istio
+oc delete project istio-operator
+oc delete project istio-system
+
+oc project myproject
+
+echo Istio add-on successfully removed

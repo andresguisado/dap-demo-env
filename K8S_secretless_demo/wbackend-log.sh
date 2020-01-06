@@ -23,27 +23,11 @@ fi
 set_namespace $TEST_APP_NAMESPACE_NAME
 app_pod=$($CLI get pods | grep "Running" | grep $pod_name_substr | awk '{print $1}')
 
-if [[ $PLATFORM == openshift ]]; then
-  case $BACKEND in
-    pg )
-      $CLI exec -it $app_pod -- bash -c "tail -f /var/lib/pgsql/data/userdata/pg_log/postgresql-???.log"
-      ;;
-    ms )
-      $CLI exec -it $app_pod -- bash -c "tail -f /var/lib/mysql/mysql.log"
-      ;;
-    http )
-      $CLI logs -f $app_pod
-      ;;
-   esac
-fi
-
-if [[ $PLATFORM = kubernetes ]]; then
-  case $BACKEND in
-    pg | ms )
-      $CLI logs $app_pod -f
-      ;;
-    http )
-      $CLI logs -f $app_pod
-      ;;
-   esac
-fi
+case $BACKEND in
+  pg | ms )
+    $CLI logs $app_pod -f
+    ;;
+  http )
+    $CLI logs -f $app_pod
+    ;;
+esac

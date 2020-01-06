@@ -22,10 +22,16 @@ LOCAL_MYSQL_IMAGE=mysql:latest
 LOCAL_NGINX_IMAGE=nginx-secretless:latest
 
 main() {
+  ./precheck.sh
+
   if $CONNECTED; then
     build
   fi
 
+  login_as $CLUSTER_ADMIN_USERNAME
+  create_test_app_namespace
+  configure_rbac
+  login_as $DEVELOPER_USERNAME
   registry_login
   tag_and_push
 }
@@ -49,6 +55,41 @@ build() {
   done
 }
 
+###########################
+# Login with user parameter
+#
+login_as() {
+  local user=$1
+  if [[ "$PLATFORM" == "openshift" ]]; then
+    oc login -u $user
+  fi
+}
+
+############################
+create_test_app_namespace() {
+  announce "Creating Test App namespace."
+  set_namespace default
+  if has_namespace "$TEST_APP_NAMESPACE_NAME"; then
+    echo "Namespace '$TEST_APP_NAMESPACE_NAME' exists, not going to create it."
+  else
+    echo "Creating '$TEST_APP_NAMESPACE_NAME' namespace."
+    $CLI create namespace $TEST_APP_NAMESPACE_NAME
+  fi
+  set_namespace $TEST_APP_NAMESPACE_NAME
+}
+
+###################################
+configure_rbac() {
+  if [[ "$PLATFORM" != "openshift" ]]; then
+    return
+  fi
+
+  echo "Configuring OpenShift developer permissions."
+  oc adm policy add-role-to-user system:registry $DEVELOPER_USERNAME
+  oc adm policy add-role-to-user system:image-builder $DEVELOPER_USERNAME
+  oc adm policy add-role-to-user admin $DEVELOPER_USERNAME -n $TEST_APP_NAMESPACE_NAME
+}
+
 ###################################
 registry_login() {
   if [[ "${PLATFORM}" = "openshift" ]]; then
@@ -67,18 +108,22 @@ registry_login() {
 
 ###################################
 tag_and_push() {
+set -x
   docker tag $LOCAL_SECRETLESS_APP_IMAGE $SECRETLESS_APP_IMAGE
-  docker push $SECRETLESS_APP_IMAGE
   docker tag $LOCAL_SECRETLESS_BROKER_IMAGE $SECRETLESS_BROKER_IMAGE
-  docker push $SECRETLESS_BROKER_IMAGE
   docker tag $LOCAL_DEMO_APP_IMAGE $DEMO_APP_IMAGE
-  docker push $DEMO_APP_IMAGE
   docker tag $LOCAL_PGSQL_IMAGE $PGSQL_IMAGE
-  docker push $PGSQL_IMAGE
   docker tag $LOCAL_MYSQL_IMAGE $MYSQL_IMAGE
-  docker push $MYSQL_IMAGE
   docker tag $LOCAL_NGINX_IMAGE $NGINX_IMAGE
-  docker push $NGINX_IMAGE
+
+  if ! $MINIKUBE; then
+    docker push $SECRETLESS_APP_IMAGE
+    docker push $SECRETLESS_BROKER_IMAGE
+    docker push $DEMO_APP_IMAGE
+    docker push $PGSQL_IMAGE
+    docker push $MYSQL_IMAGE
+    docker push $NGINX_IMAGE
+  fi
 }
 
 main "$@"

@@ -7,7 +7,6 @@ clusters:
 contexts:
 - context:
     cluster: minikube
-    namespace: cyberark
     user: minikube
   name: minikube
 current-context: minikube

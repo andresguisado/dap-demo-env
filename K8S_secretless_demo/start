@@ -2,20 +2,18 @@
 set -euo pipefail
 
 source ../config/dap.config
-source ../config/$PLATFORM.config
 source ../config/utils.sh
 
 
 main() {
+  precheck.sh
   check_dependencies
-
-  login_as $CLUSTER_ADMIN_USERNAME
-  ./stop
-  create_test_app_namespace
-  configure_rbac
+#  ./initialize.sh
 
   login_as $DEVELOPER_USERNAME
+  ./stop
   load_policies
+  registry_login
   deploy_test_app
 }
 
@@ -28,59 +26,6 @@ check_dependencies() {
   check_env_var "CONJUR_ACCOUNT"
   check_env_var "CONJUR_ADMIN_PASSWORD"
   check_env_var "AUTHENTICATOR_ID"
-}
-
-###########################
-# Login with user parameter
-#
-login_as() {
-  local user=$1
-  if [[ "$PLATFORM" == "openshift" ]]; then
-    oc login -u $user
-  fi
-}
-
-############################
-create_test_app_namespace() {
-  announce "Creating Test App namespace."
-  set_namespace default
-  if has_namespace "$TEST_APP_NAMESPACE_NAME"; then
-    echo "Namespace '$TEST_APP_NAMESPACE_NAME' exists, not going to create it."
-  else
-    echo "Creating '$TEST_APP_NAMESPACE_NAME' namespace."
-    $CLI create namespace $TEST_APP_NAMESPACE_NAME
-  fi
-  set_namespace $TEST_APP_NAMESPACE_NAME
-}
-
-###################################
-#
-#
-configure_rbac() {
-  if [[ "$PLATFORM" != "openshift" ]]; then
-    return
-  fi
-
-  echo "Configuring OpenShift developer permissions."
-  oc adm policy add-role-to-user system:registry $DEVELOPER_USERNAME
-  oc adm policy add-role-to-user system:image-builder $DEVELOPER_USERNAME
-  oc adm policy add-role-to-user admin $DEVELOPER_USERNAME -n $TEST_APP_NAMESPACE_NAME
-}
-
-###################################
-registry_login() {
-  if [[ "${PLATFORM}" = "openshift" ]]; then
-    docker login -u _ -p $(oc whoami -t) $DOCKER_REGISTRY_URL
-  else
-    if ! [ "${DOCKER_EMAIL}" = "" ]; then
-      $CLI delete --ignore-not-found secret dockerpullsecret
-      $CLI create secret docker-registry dockerpullsecret \
-           --docker-server=$DOCKER_REGISTRY_URL \
-           --docker-username=$DOCKER_USERNAME \
-           --docker-password=$DOCKER_PASSWORD \
-           --docker-email=$DOCKER_EMAIL
-    fi
-  fi
 }
 
 ############################
@@ -122,44 +67,12 @@ policy/resource-access-grants.yml
 deploy_test_app() {
   announce "Deploying Secretless app for $TEST_APP_NAMESPACE_NAME."
 
-  set_namespace $TEST_APP_NAMESPACE_NAME
-  init_registry_creds
-
   # deploy secretless backend servers 
-  deploy_pg_database
   deploy_mysql_database
+  deploy_pg_database
   deploy_nginx
 
   deploy_secretless_app
-}
-
-###########################
-init_registry_creds() {
-  if [ $PLATFORM = 'kubernetes' ]; then
-    if ! [ "${DOCKER_EMAIL}" = "" ]; then
-      announce "Creating image pull secret."
-    
-      kubectl delete --ignore-not-found secret dockerpullsecret -n $TEST_APP_NAMESPACE_NAME
-
-      kubectl create secret docker-registry dockerpullsecret \
-        --docker-server=$DOCKER_REGISTRY_URL \
-        --docker-username=$DOCKER_USERNAME \
-        --docker-password=$DOCKER_PASSWORD \
-        --docker-email=$DOCKER_EMAIL
-    fi
-  elif [ $PLATFORM = 'openshift' ]; then
-    announce "Creating image pull secret."
-    
-    $CLI delete --ignore-not-found secrets dockerpullsecret
-  
-    $CLI secrets new-dockercfg dockerpullsecret \
-      --docker-server=${DOCKER_REGISTRY_URL} \
-      --docker-username=_ \
-      --docker-password=$($CLI whoami -t) \
-      --docker-email=_
-  
-    $CLI secrets add serviceaccount/default secrets/dockerpullsecret --for=pull    
-  fi
 }
 
 ###########################
@@ -184,9 +97,7 @@ deploy_mysql_database() {
 
   echo "Deploying mysql backend"
 
-  test_app_mysql_docker_image="mysql/mysql-server:5.7"
-
-  sed "s#{{ IMAGE_NAME }}#$test_app_mysql_docker_image#g" \
+  sed "s#{{ IMAGE_NAME }}#$MYSQL_IMAGE#g" \
     ./manifests/templates/mysql.template.yml |
     sed "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g" |
     sed "s#{{ TEST_APP_DB_PASSWORD }}#$MYSQL_DB_PASSWORD#g" |
@@ -218,41 +129,39 @@ deploy_pg_database() {
   var_value_add_REST.sh test-app-secretless/pg-password $PG_DB_PASSWORD
   var_value_add_REST.sh test-app-secretless/pg-sslmode $PG_DB_SSLMODE
 
-  test_app_pg_docker_image=$(repo_image_tag pgsql $TEST_APP_NAMESPACE_NAME)
-
-  sed "s#{{ IMAGE_NAME }}#$test_app_pg_docker_image#g" \
+  sed "s#{{ IMAGE_NAME }}#$PGSQL_IMAGE#g" \
     ./manifests/templates/postgres.template.yml |
     sed "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g" |
     sed "s#{{ IMAGE_PULL_POLICY }}#$IMAGE_PULL_POLICY#g" |
     sed "s#{{ TEST_APP_DB_PASSWORD }}#$PG_DB_PASSWORD#g" \
     > ./manifests/pgsql.yaml
-    $CLI create -f ./manifests/pgsql.yaml
+  $CLI create -f ./manifests/pgsql.yaml
 
     setup_pg_logging
 }
 
 ###########################
 setup_pg_logging() {  #  Adds connection & disconnection logging
-  wait_for_running_pod postgres-db-0
+  wait_for_running_pod postgres-db-0 $TEST_APP_NAMESPACE_NAME
 
   # HACK ALERT: turn on connect/disconnect logging - not elegant but conf file doesn't exist in image
-  if [ $PLATFORM = openshift ]; then
-    PG_CONF_FILE=/var/lib/pgsql/data/userdata/postgresql.conf
-    PG_RUNUSER=""
-    PG_DATA=/var/lib/pgsql/data/userdata
-    PG_CTL=/opt/rh/rh-postgresql95/root/usr/bin/pg_ctl
-  else
+#  if [ $PLATFORM = openshift ]; then
+#    PG_CONF_FILE=/var/lib/pgsql/data/userdata/postgresql.conf
+#    PG_RUNUSER=""
+#    PG_DATA=/var/lib/pgsql/data/userdata
+#    PG_CTL=/opt/rh/rh-postgresql95/root/usr/bin/pg_ctl
+#  else
     PG_CONF_FILE=/var/lib/postgresql/data/postgresql.conf
     PG_RUNUSER="runuser -l postgres -c"
     PG_DATA=/var/lib/postgresql/data 
     PG_CTL=/usr/lib/postgresql/9.6/bin/pg_ctl
-  fi
+#  fi
 
   $CLI exec -it postgres-db-0 -- bash -c "sed -e 's#\#log_connections = off#log_connections = on#' -i $PG_CONF_FILE"
   $CLI exec -it postgres-db-0 -- bash -c "sed -e 's#\#log_disconnections = off#log_disconnections = on#' -i $PG_CONF_FILE"
   $CLI exec -it postgres-db-0 -- bash -c "$PG_RUNUSER PGDATA=$PG_DATA $PG_CTL reload"
 
-  wait_for_running_pod postgres-db-0
+  wait_for_running_pod postgres-db-0 $TEST_APP_NAMESPACE_NAME
 }
 
 ###########################
@@ -263,8 +172,6 @@ deploy_nginx() {
 
   echo "Deploying nginx backend"
 
-  nginx_image=$(repo_image_tag nginx-secretless $TEST_APP_NAMESPACE_NAME)
-
   # Note: all server-side authn creds are provisioned in the image build
   # Which begs the question - how would you ever rotate that?
 
@@ -273,7 +180,7 @@ deploy_nginx() {
   var_value_add_REST.sh test-app-secretless/http-username $HTTP_UNAME
   var_value_add_REST.sh test-app-secretless/http-password $HTTP_PWD
 
-  sed "s#{{ IMAGE_NAME }}#$nginx_image#g" \
+  sed "s#{{ IMAGE_NAME }}#$NGINX_IMAGE#g" \
     ./manifests/templates/nginx.template.yml |
     sed "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g" |
     sed "s#{{ IMAGE_PULL_POLICY }}#$IMAGE_PULL_POLICY#g" |
@@ -284,8 +191,8 @@ deploy_nginx() {
 # create copy of conjur config map in the app namespace
 copy_conjur_config_map() {
   $CLI delete --ignore-not-found cm $CONJUR_CONFIG_MAP -n $TEST_APP_NAMESPACE_NAME
-  $CLI get cm $CONJUR_CONFIG_MAP -n default -o yaml \
-    | sed "s/namespace: default/namespace: $TEST_APP_NAMESPACE_NAME/" \
+  $CLI get cm $CONJUR_CONFIG_MAP -n $CONJUR_NAMESPACE_NAME -o yaml \
+    | sed "s/namespace: $CONJUR_NAMESPACE_NAME/namespace: $TEST_APP_NAMESPACE_NAME/" \
     | $CLI create -f -
 }
 
@@ -330,12 +237,9 @@ deploy_secretless_app() {
 
   sleep 5
 
-  secretless_app_image=$(repo_image_tag secretless $TEST_APP_NAMESPACE_NAME)
-  secretless_broker_image=$(repo_image_tag secretless-broker $TEST_APP_NAMESPACE_NAME)
-
-  sed -e "s#{{ SECRETLESS_BROKER_IMAGE }}#$secretless_broker_image#g" \
+  sed -e "s#{{ SECRETLESS_BROKER_IMAGE }}#$SECRETLESS_BROKER_IMAGE#g" \
     ./manifests/templates/test-app-secretless.template.yml |
-  sed -e "s#{{ SECRETLESS_APP_IMAGE }}#$secretless_app_image#g" |
+  sed -e "s#{{ SECRETLESS_APP_IMAGE }}#$SECRETLESS_APP_IMAGE#g" |
   sed -e "s#{{ SECRETLESS_SERVICEACCOUNT_NAME }}#$SECRETLESS_SERVICEACCOUNT_NAME#g" |
   sed -e "s#{{ IMAGE_PULL_POLICY }}#$IMAGE_PULL_POLICY#g" |
   sed -e "s#{{ CONJUR_MASTER_HOST_NAME }}#$CONJUR_MASTER_HOST_NAME#g" |

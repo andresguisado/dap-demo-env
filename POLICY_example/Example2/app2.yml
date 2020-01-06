@@ -7,11 +7,11 @@
   annotations:
     description: Application 2
   body:
-  - !layer nodes
+  - !group nodes
   - !host node
 
   - !grant
-    role: !layer nodes
+    role: !group nodes
     members:
     - !host node
     - !group /masters
@@ -23,5 +23,5 @@
   - !permit
     privileges: [ read, execute ]
     roles:
-    - !layer nodes
+    - !group nodes
     resources: *variables

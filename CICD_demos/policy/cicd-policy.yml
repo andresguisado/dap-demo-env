@@ -31,7 +31,7 @@
 
   # Permit node identity to retrieve secrets
 - !permit
-  privileges: [ read, execute ]
+  privileges: [ read, execute, update ]
   roles:
   - !host client/node
   - !layer client/nodes

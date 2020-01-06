@@ -3,14 +3,17 @@
 # https://github.com/cyberark/sidecar-injector#installing-the-sidecar-injector-manually
 
 source ../config/dap.config
-source ../config/$PLATFORM.config
 source ./injector.config
 
 TMPDIR=/tmp
 
+if [[ $PLATFORM == openshift ]]; then
+  $CLI login -u $CLUSTER_ADMIN_USERNAME
+fi
+
 ./stp_injector
 
-pushd injector_mgmt
+pushd mgmt_injector
   # create namespace for injectors
   $CLI create namespace $INJECTOR_NAMESPACE_NAME
 

@@ -1,10 +1,13 @@
 #!/bin/bash
 
 source ../config/dap.config
-source ../config/$PLATFORM.config
 source ./injector.config
 
-pushd injector_mgmt
+if [[ $PLATFORM == openshift ]]; then
+  $CLI login -u $CLUSTER_ADMIN_USERNAME
+fi
+
+pushd mgmt_injector
   echo "Deleting deployment..."
   $CLI -n $INJECTOR_NAMESPACE_NAME delete -f deployment/deployment.yaml --ignore-not-found
   echo "Deleting service..."

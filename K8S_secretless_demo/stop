@@ -1,25 +1,15 @@
 #!/bin/bash
 set -eo pipefail
 
-. ../config/dap.config
-. ../config/$PLATFORM.config
-. ../config/utils.sh
-
-if [ $PLATFORM = 'openshift' ]; then
-  oc login -u $CLUSTER_ADMIN_USERNAME
-fi
-
-if ! has_namespace $TEST_APP_NAMESPACE_NAME; then
-  exit 0
-fi
-
-set_namespace $TEST_APP_NAMESPACE_NAME
+source ../config/dap.config
+source ../config/utils.sh
 
 announce "Deleting Secretless deployment."
-$CLI delete --ignore-not-found secret test-app-secret
-$CLI delete --ignore-not-found secret dockerpullsecret
+$CLI delete secret test-app-secret -n $TEST_APP_NAMESPACE_NAME --ignore-not-found 
+$CLI delete secret dockerpullsecret -n $TEST_APP_NAMESPACE_NAME --ignore-not-found 
 
 $CLI delete --ignore-not-found \
+     -n $TEST_APP_NAMESPACE_NAME \
      service/postgres-db \
      statefulset/postgres-db \
      service/mysql-db \
@@ -34,7 +24,7 @@ $CLI delete --ignore-not-found \
      &
 
 echo "Waiting for pods to terminate"
-while [[ "$($CLI get pods | grep postgres)" != "" ]]; do
+while [[ "$($CLI get pods -n $TEST_APP_NAMESPACE_NAME | grep postgres)" != "" ]]; do
   sleep 4
   echo -n '.'
 done
