@@ -97,6 +97,7 @@ echo "echo $(cat $SSH_PUB_KEY) >> ~/.ssh/authorized_keys" | minishift ssh
 
 ## Write Minishift docker & oc config values as env var inits to speed up env loading
 OUTPUT_FILE=$DAP_HOME/config/minishift.config
+rm -f $OUTPUT_FILE
 minishift oc-env > $OUTPUT_FILE
 minishift docker-env >> $OUTPUT_FILE
 echo "export DOCKER_REGISTRY_PATH=$(minishift openshift registry)" >> $OUTPUT_FILE

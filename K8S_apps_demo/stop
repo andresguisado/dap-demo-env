@@ -33,6 +33,13 @@ $CLI delete --ignore-not-found \
   serviceaccount/test-app-summon-init \
   -n $TEST_APP_NAMESPACE_NAME
 
+echo "Deleting test app/secrets injection deployment."
+$CLI delete --ignore-not-found \
+  deployment/test-app-secrets-injection \
+  service/test-app-secrets-injection \
+  secret/db-credentials \
+  -n $TEST_APP_NAMESPACE_NAME
+
 echo "Waiting for pods to terminate"
 until [[ "$($CLI get pods -n $TEST_APP_NAMESPACE_NAME 2>&1 | grep test-app-summon)" == "" ]]; do
   sleep 4

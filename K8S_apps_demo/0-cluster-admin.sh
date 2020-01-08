@@ -20,4 +20,10 @@ sed -e "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g"   \
 
 $CLI apply -f ./manifests/dap-user-rbac-$TEST_APP_NAMESPACE_NAME.yaml
 
-echo "User RBAC manifest applied."
+sed -e "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g"   \
+     ./manifests/templates/dap-secrets-injector-rbac.template.yaml    \
+    > ./manifests/dap-secrets-injector-rbac-$TEST_APP_NAMESPACE_NAME.yaml
+
+$CLI apply -f ./manifests/dap-secrets-injector-rbac-$TEST_APP_NAMESPACE_NAME.yaml -n $TEST_APP_NAMESPACE_NAME
+
+echo "User & Secrets Injection RBAC manifests applied."
