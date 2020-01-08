@@ -36,7 +36,7 @@ contexts:
   name: minishift
 - context:
     cluster: 192-168-99-100:8443
-    namespace: testapps
+    namespace: myproject
     user: developer/192-168-99-100:8443
   name: myproject/192-168-99-100:8443/developer
 - context:
@@ -54,7 +54,7 @@ contexts:
     namespace: testapps
     user: system:admin/192-168-99-100:8443
   name: testapps/192-168-99-100:8443/system:admin
-current-context: testapps/192-168-99-100:8443/developer
+current-context: cyberark/192-168-99-100:8443/dapadmin
 kind: Config
 preferences: {}
 users:

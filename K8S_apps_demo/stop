@@ -40,6 +40,8 @@ $CLI delete --ignore-not-found \
   secret/db-credentials \
   -n $TEST_APP_NAMESPACE_NAME
 
+rm -f manifests/*.yaml manifests/*.yml
+
 echo "Waiting for pods to terminate"
 until [[ "$($CLI get pods -n $TEST_APP_NAMESPACE_NAME 2>&1 | grep test-app-summon)" == "" ]]; do
   sleep 4

@@ -79,7 +79,9 @@ store_config_files_in_cache_dir() {
 
   echo "Caching DAP Follower certificate..."
   rm -f $FOLLOWER_CERT_FILE
-  docker cp -L $CONJUR_FOLLOWER_CONTAINER_NAME:/opt/conjur/etc/ssl/conjur-follower.pem $FOLLOWER_CERT_FILE
+  docker exec $CONJUR_MASTER_CONTAINER_NAME \
+	bash -c "evoke ca issue conjur-follower $CONJUR_MASTER_HOST_NAME $CONJUR_FOLLOWER_SERVICE_NAME"
+  docker cp -L $CONJUR_MASTER_CONTAINER_NAME:/opt/conjur/etc/ssl/conjur-follower.pem $FOLLOWER_CERT_FILE
 
   echo "Caching Conjur Follower seed file..."
   rm -f $FOLLOWER_SEED_FILE
