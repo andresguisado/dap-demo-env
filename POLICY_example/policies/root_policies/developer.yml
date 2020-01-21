@@ -1,0 +1,4 @@
+- !host app/my_k8s_app_namespace/service_account/my_k8s_app_service_acct
+- !grant
+  role: !group my_k8s_hosts 
+  members: !host app/my_k8s_app_namespace/service_account/my_k8s_app_service_acct

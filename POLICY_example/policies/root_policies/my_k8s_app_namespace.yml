@@ -1,0 +1,7 @@
+- !policy
+  id: my_k8s_app
+  body:
+  - !group my_k8s_hosts
+- !grant
+  role: !group conjur/authn-k8s/lab/authn-k8s-lab-consumers
+  members: !group my_k8s_app/my_k8s_hosts

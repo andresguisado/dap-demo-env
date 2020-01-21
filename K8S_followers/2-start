@@ -1,14 +1,12 @@
-#!/bin/bash 
+#!/bin/bash
 set -uo pipefail
 
 source ../config/dap.config
 source ../config/utils.sh
 
 main() {
-  precheck.sh
-  check_dependencies
-
-  login_as $DAP_ADMIN_USERNAME
+  ./precheck_k8s_followers.sh
+  login_as $DAP_ADMIN_USERNAME $DAP_ADMIN_PASSWORD
   ./stop
 
   initialize_variables
@@ -16,22 +14,6 @@ main() {
     initialize_config_maps
     registry_login
     deploy_follower_pods
-  fi
-  update_conjur_config_map
-}
-
-###########################
-# Verifies critical environment variables have values
-#
-check_dependencies() {
-  check_env_var "CONJUR_APPLIANCE_IMAGE"
-  check_env_var "CONJUR_APPLIANCE_REG_IMAGE"
-  check_env_var "CONJUR_NAMESPACE_NAME"
-  check_env_var "AUTHENTICATOR_ID"
-  check_env_var "DOCKER_REGISTRY_URL"
-  if [[ "$(which jq)" == "" ]]; then
-    echo "jq not installed."
-    exit -1
   fi
 }
 
@@ -72,7 +54,7 @@ initialize_variables() {
 # Validates access to K8s API with service account credentials in DAP Master.
 # This function does three things:
 #   - tests secrets retrieval from the DAP Master
-#   - ensures the K8s API variables have correctly been populate
+#   - ensures the K8s API variables have correctly been populated
 #   - validates those credentials actually enable service account authentication
 #
 verify_k8s_api_access() {
@@ -104,9 +86,6 @@ verify_k8s_api_access() {
 initialize_config_maps() {
   echo "Creating Conjur config map." 
 
-  # get cert and echo to file for later use
-  echo "$(get_cert_REST.sh $CONJUR_MASTER_HOST_NAME $CONJUR_MASTER_PORT)" > $MASTER_CERT_FILE
-
   # Set Conjur Master URL to DNS hostname & port
   CONJUR_MASTER_URL="https://$CONJUR_MASTER_HOST_NAME:$CONJUR_MASTER_PORT"
 
@@ -127,11 +106,15 @@ data:
   CONJUR_MASTER_URL: "${CONJUR_MASTER_URL}"
   CONJUR_MASTER_CERTIFICATE: |
 $(cat "${MASTER_CERT_FILE}" | awk '{ print "    " $0 }')
+  CONJUR_AUTHN_LOGIN_CLUSTER: "${CONJUR_CLUSTER_LOGIN}"
+  CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS}"
   AUTHENTICATOR_ID: "${AUTHENTICATOR_ID}"
   CONJUR_APPLIANCE_URL: "https://${CONJUR_FOLLOWER_SERVICE_NAME}"
   CONJUR_AUTHN_URL: "https://${CONJUR_FOLLOWER_SERVICE_NAME}/api/authn-k8s/${AUTHENTICATOR_ID}"
   CONJUR_AUTHN_TOKEN_FILE: "/run/conjur/access-token"
   CONJUR_AUTHN_TOKEN_FILE_INJECTED: "/run/conjur/conjur-access-token"
+  CONJUR_SSL_CERTIFICATE: |
+$(cat "${FOLLOWER_CERT_FILE}" | awk '{ print "    " $0 }')
 EOL1
 
   # FOLLOWER_CONFIG_MAP holds config info needed by Followers only
@@ -193,43 +176,6 @@ deploy_follower_pods() {
     echo -n "."; sleep 3
   done
   echo ""
-}
-
-###################################
-# update_conjur_config_map
-#
-update_conjur_config_map() {
-
-  # Must delete config map before recreating it
-  $CLI -n $CONJUR_NAMESPACE_NAME delete cm ${CONJUR_CONFIG_MAP} --ignore-not-found
-
-  # Append Follower cert to config map 
-  cat << EOL3 | $CLI -n $CONJUR_NAMESPACE_NAME apply -f -
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: "${CONJUR_CONFIG_MAP}"
-data:
-  FOLLOWER_NAMESPACE_NAME: "${CONJUR_NAMESPACE_NAME}"
-  CONJUR_ACCOUNT: "${CONJUR_ACCOUNT}"
-  CONJUR_VERSION: "${CONJUR_VERSION}"
-  CONJUR_MASTER_HOST_NAME: "${CONJUR_MASTER_HOST_NAME}"
-  CONJUR_MASTER_PORT: "${CONJUR_MASTER_PORT}"
-  CONJUR_MASTER_URL: "${CONJUR_MASTER_URL}"
-  CONJUR_MASTER_CERTIFICATE: |
-$(cat "${MASTER_CERT_FILE}" | awk '{ print "    " $0 }')
-  CONJUR_AUTHN_LOGIN_CLUSTER: "${CONJUR_CLUSTER_LOGIN}"
-  CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS}"
-  AUTHENTICATOR_ID: "${AUTHENTICATOR_ID}"
-  CONJUR_APPLIANCE_URL: "https://${CONJUR_FOLLOWER_SERVICE_NAME}"
-  CONJUR_AUTHN_URL: "https://${CONJUR_FOLLOWER_SERVICE_NAME}/api/authn-k8s/${AUTHENTICATOR_ID}"
-  CONJUR_AUTHN_TOKEN_FILE: "/run/conjur/access-token"
-  CONJUR_AUTHN_TOKEN_FILE_INJECTED: "/run/conjur/conjur-access-token"
-  CONJUR_SSL_CERTIFICATE: |
-$(cat "${FOLLOWER_CERT_FILE}" | awk '{ print "    " $0 }')
-EOL3
-
-  echo "Appended Follower cert to Conjur config map."
 }
 
 main "$@"

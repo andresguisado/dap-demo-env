@@ -5,12 +5,8 @@ cp /usr/bin/start-follower.sh \
    $SEEDFILE_DIR
 
 if [[ ! "${CONJUR_SEED_FILE_URL}" =~ ^http[s]?:// ]]; then
-    if [[ "${CONJUR_SEED_FILE}" != "" ]]; then
-      echo ${CONJUR_SEED_FILE} | base64 -d > $SEEDFILE_DIR/follower-seed.tar
-    else
-      echo "WARN: Neither Seed URL nor File found - assuming seedfile exists on the follower!"
-    fi
-    exit 0
+  echo "WARN: Seed file URL not found - assuming seedfile exists on the follower!"
+  exit 0
 fi
 
 if [[ "${CONJUR_SEED_FILE_URL}" =~ ^https:// ]] && [[ "${CONJUR_SSL_CERTIFICATE}" = "" ]]; then

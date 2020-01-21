@@ -1,0 +1,40 @@
+  - !policy
+    id: authn-k8s
+    owner: !host /authn-k8s_svc
+    body:
+    - !variable kubernetes/service-account-token
+    - !variable kubernetes/ca-cert
+    - !variable kubernetes/api-url
+    - !variable ca/key
+    - !variable ca/cert
+
+    - !webservice lab
+    - !policy 
+      id: lab
+      body:
+#      - &authenticated-resources
+#          - !host
+#            id: apps/conjur-follower-ns/service_account/conjur-cluster
+#            annotations:
+#              kubernetes/authentication-container-name: authenticator
+              # Uncomment the following line to display the platform's icon in the UI
+              # <platform>: "true"- !policy 
+#        id: apps
+#        body:
+    # `authenticated-resources` is an array of hosts that map to
+    # resources in K8s. The naming convention is
+    # namespace/resource type/resource name
+        - &authenticated-resources
+          - !host
+            id: conjur-follower-ns/service_account/conjur-cluster
+            annotations:
+              kubernetes/authentication-container-name: authenticator
+              # Uncomment the following line to display the platform's icon in the UI
+              # <platform>: "true"
+
+      # These `authenticated-resources` represent logical applications
+      # or workloads and can be authenticated with Conjur.
+        - !permit
+          role: *authenticated-resources
+          privilege: [ authenticate ]
+          resource: !webservice lab

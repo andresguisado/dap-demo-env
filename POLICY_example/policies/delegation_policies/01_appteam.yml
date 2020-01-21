@@ -1,0 +1,5 @@
+---
+- !host 33098445777234/IAM-Role
+- !grant
+  role: !group app_team_a_readonly
+  member: !host 33098445777234/IAM-Role

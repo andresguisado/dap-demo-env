@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# example of inlining authentication as admin user and posting a policy document
+
+export DAP_POLICY_FILE=01_policy.yml
+export DAP_ADMIN_TOKEN=$(curl -k --user admin:$CONJUR_ADMIN_PASSWORD "$CONJUR_MASTER_URL/authn/cybr/login" \
+	"$CONJUR_MASTER_URL/authn/cybr/admin/authenticate" | base64 | tr -d '\r\n') 
+curl -vvv -k \
+	-H "Authorization: Token token=\"$DAP_ADMIN_TOKEN\"	\
+	-d "$(cat $DAP_POLICY_FILE)" 				\
+	"$DAP_MASTER_URL/policies/cybr/policy/root"

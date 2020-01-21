@@ -10,7 +10,7 @@ source ../config/$PLATFORM.config
 
 #################
 main() {
-  precheck.sh
+  ./precheck_master.sh
   ./stop
   while [[ "$(docker ps -a | grep $CONJUR_MASTER_CONTAINER_NAME)" != "" ]]; do
     echo -n '.'
@@ -22,7 +22,7 @@ main() {
   ./enable_dap_node_for_k8s.sh
   store_config_files_in_cache_dir
   cli_up
-  follower_up
+#  follower_up
   load_demo_policy
   ./exec-into-cli.sh
 }

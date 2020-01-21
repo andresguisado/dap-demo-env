@@ -5,6 +5,7 @@ DAP_HOME="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
 source $DAP_HOME/config/dap.config
 source $DAP_HOME/config/kubernetes.config
 
+# 
 export MINIKUBE_VM_MEMORY=6144
 export KUBERNETES_VERSION=v1.11.10
 export SSH_PUB_KEY=~/.ssh/id_dapdemo.pub

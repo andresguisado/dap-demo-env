@@ -13,8 +13,9 @@ source ../config/utils.sh
 #
 # Registry image names are defined in the $PLATFORM.config file and referenced in deployment manifests.
 
+./precheck_k8s_apps.sh
 
-login_as $DEVELOPER_USERNAME
+login_as $DEVELOPER_USERNAME $DEVELOPER_PASSWORD
 
 if $CONNECTED; then
   pushd build

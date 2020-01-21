@@ -138,10 +138,10 @@ spec:
                 key: conjur-authn-login-sidecar
         resources:
           requests:
-            cpu: "100m"
+            cpu: "50m"
             memory: "16Mi"
           limits:
-            cpu: "100m"
+            cpu: "50m"
             memory: "16Mi"
         volumeMounts:
           - mountPath: /run/conjur

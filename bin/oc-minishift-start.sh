@@ -77,6 +77,7 @@ else
     export KUBECONFIG=$KUBECONFIGDIR/config
   fi
 fi
+
 echo "Getting docker env..."
 eval $(minishift docker-env)
 

@@ -1,0 +1,47 @@
+#!/bin/bash
+
+source ./onboard-demo.config
+
+main() {
+  create_pas_safe_and_accounts
+  create_identities_and_load_policies
+
+}
+
+create_pas_safe_and_accounts() {
+  # create safe w/ accounts, tag safe w/ PAS_LOB_NAME
+  pushd java
+    java -cp ./pas:./dap -jar OnboardProject.jar "$@"
+  popd
+}
+
+create_identities_and_load_policies() {
+  echo "Creating identities..."
+  for ((i=0;i<$NUM_IDENTITIES;i++)) do
+    conjur_identity=${IDENTITY_LIST[$i]}
+    echo "- $conjur_identity" > foo
+    load_policy_REST.sh root foo
+    rm foo
+
+  # remove spaces and slashes in filename
+    id_name=$(echo $conjur_identity | sed -e "s#!##"g | sed -e "s# #-#"g | sed -e "s#/#_#"g)
+    policy_fname=./conjur-policy/synch-policy-$PAS_SAFE_NAME-$id_name.yaml
+
+    # Instantiate policy template with this access request info
+    sed -e "s#{{ PAS_VAULT_NAME }}#$PAS_VAULT_NAME#g" \
+	"./conjur-policy/template/synch-preload-policy.template.yaml" |
+      sed -e "s#{{ PAS_LOB_NAME }}#$PAS_LOB_NAME#g" |
+      sed -e "s#{{ PAS_SAFE_NAME }}#$PAS_SAFE_NAME#g" |
+      sed -e "s#{{ CONJUR_LOB_ADMIN_USER }}#$CONJUR_LOB_ADMIN_USER#g" |
+      sed -e "s#{{ CONJUR_SAFE_ADMIN_USER }}#$CONJUR_SAFE_ADMIN_USER#g" |
+      sed -e "s#{{ CONJUR_SAFE_CONSUMER_IDENTITY }}#$conjur_identity#g" \
+      > $policy_fname
+
+    load_policy_REST.sh root $policy_fname
+
+    echo
+    echo "Account access will be enabled for \"$CONJUR_SAFE_CONSUMER_IDENTITY\" with next synchronizer run."
+  done
+}
+
+main "$@"

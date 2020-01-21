@@ -1,0 +1,15 @@
+  - !policy
+    id: authn-k8s
+    owner: !host /authn-k8s_svc
+    body:
+    - !variable kubernetes/service-account-token
+    - !variable kubernetes/ca-cert
+    - !variable kubernetes/api-url
+    - !variable ca/key
+    - !variable ca/cert
+
+    - !webservice lab
+    - !policy
+      id: lab
+      body:
+      - !group authn-k8s-lab-consumers

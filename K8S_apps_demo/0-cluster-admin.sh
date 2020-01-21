@@ -4,7 +4,7 @@ source ../config/utils.sh
 
 echo "Creating namespace & RBAC role bindings..."
 
-login_as $CLUSTER_ADMIN_USERNAME
+login_as $CLUSTER_ADMIN_USERNAME $CLUSTER_ADMIN_PASSWORD
 
 if [[ $PLATFORM == openshift \
 	&& "$($CLI get user $DEVELOPER_USERNAME --no-headers --ignore-not-found)" == "" ]]; then

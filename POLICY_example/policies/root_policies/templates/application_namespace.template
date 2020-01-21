@@ -1,0 +1,23 @@
+
+#======================
+# AppTeam Policy Template where policy namespace = EPV safe name
+# Replace {SAFE_NAME} with the name of the safe synchronizeed from EPV
+# Note: The final grant assumes that VCS has already created the policy namespace.
+#======================
+- !host 
+  id: {SAFE_NAME}_svc
+  restricted_to: 192.168.1.1
+- !policy
+  id: {SAFE_NAME}
+  owner: !host {SAFE_NAME}_svc
+  body:
+  - !group {SAFE_NAME}_readonly
+- !grant
+  role: !group conjur/authn-iam/lab/clients
+  members: !group {SAFE_NAME}/{SAFE_NAME}_readonly
+- !grant
+  role: !layer conjur/authn-k8s/lab/k8s_apps_lab
+  members: !group {SAFE_NAME}/{SAFE_NAME}_readonly
+- !grant
+  role: !group lab-vault/lab-lob/{SAFE_NAME}/delegation/consumers
+  members: !group {SAFE_NAME}_readonly

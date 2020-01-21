@@ -1,0 +1,22 @@
+---
+- !host
+  id: authn-k8s_svc #Used to delegate authn-k8s webservice policy to K8s admins
+- !policy
+  id: conjur
+  body:
+  - !policy
+    id: cluster/prod-cluster
+    annotations:
+      ttl: 30
+    body:
+    - !layer
+    - &hosts
+      - !host
+        id: conjur-master-1.nate.lab
+      - !host
+        id: conjur-master-2.nate.lab
+      - !host
+        id: conjur-master-3.nate.lab
+    - !grant
+      role: !layer
+      member: *hosts

@@ -1,6 +1,6 @@
-#!/bin/bash 
-set -eo pipefail
+#!/bin/bash
 export ANSIBLE_MODULE=ping
 export ENV=prod
 export USER_NAME=docker
-summon ./ansssh_echo.sh $ANSIBLE_MODULE $ENV
+set -x
+summon bash -c "ansible -m $ANSIBLE_MODULE -i ./ansible_hosts $ENV --private-key=\$SSH_KEY -u $USER_NAME"

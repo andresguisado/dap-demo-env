@@ -1,5 +1,4 @@
-- !group
-  id: DemoVault-admins
+- !group DemoVault-admins
 
 - !policy
   id: DemoVault

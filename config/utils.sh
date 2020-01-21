@@ -9,22 +9,17 @@ else
 fi
 
 ######################
-check_env_var() {
-  var_name=$1
-
-  if [ "${var_name}" = "" ]; then
-    echo "You must set $1 before running these scripts."
-    exit 1
-  fi
-}
-
-######################
 # Login with username parameter if in OpenShift
 #
 login_as() {
   local user=$1
   if [[ "$PLATFORM" == "openshift" ]]; then
-    oc login -u $user
+    if [[ $# == 1 ]]; then
+      oc login -u $user
+    else
+      local password=$2
+      oc login -u $user -p $password
+    fi
   fi
 }
 

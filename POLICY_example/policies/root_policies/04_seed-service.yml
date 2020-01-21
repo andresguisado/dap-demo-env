@@ -1,0 +1,30 @@
+# =================================================
+# == Register the Seed Service
+# =================================================
+    - !policy
+      id: seed-generation
+      body:
+      # This webservice represents the Seed service API
+      - !host 330374153916/conjur_iam_auth  # create a host for my IAM role so I can deploy a follower in AWS using seed service
+      - !webservice
+
+      # Hosts that generate seeds become members of the
+      # `consumers` layer.
+      - !group seed-consumers
+
+      # Authorize `seed-consumers` to request seeds
+      - !permit
+        role: !group seed-consumers
+        privilege: [ "execute" ]
+        resource: !webservice
+
+# =================================================
+# == Grant entitlements
+# =================================================
+
+# Give followers permission to consume seeds
+    - !grant
+      role: !group seed-generation/seed-consumers
+      member:
+      - !host authn-k8s/dev/apps/conjur-follower-ns/service_account/conjur-cluster
+      - !host 330374153916/conjur_iam_auth # add my IAM role host to the seed-consumers group so it can fetch seeds

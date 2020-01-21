@@ -113,10 +113,10 @@ spec:
         resources:
           requests:
             cpu: "100m"
-            memory: 3Mi
+            memory: 32Mi
           limits:
             cpu: "100m"
-            memory: 3Mi
+            memory: 32Mi
         volumeMounts:
           - name: seedfile
             mountPath: /tmp/seedfile
@@ -165,10 +165,10 @@ spec:
           timeoutSeconds: 5
         resources:
           requests:
-            cpu: "1"
+            cpu: "500m"
             memory: 2Gi
           limits:
-            cpu: "1"
+            cpu: "500m"
             memory: 2Gi
         volumeMounts:
           - name: seedfile

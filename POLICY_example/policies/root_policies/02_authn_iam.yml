@@ -1,0 +1,9 @@
+  - !policy
+    id: authn-iam/lab
+    body:
+    - !webservice
+    - !group iam_clients_lab
+    - !permit
+      role: !group iam_clients_lab
+      privilege: [ read, authenticate ]
+      resource: !webservice

@@ -1,5 +1,4 @@
-- !group
-  id: {{ VAULT_NAME }}-admins
+- !group {{ VAULT_NAME }}-admins
 
 - !policy
   id: {{ VAULT_NAME }}

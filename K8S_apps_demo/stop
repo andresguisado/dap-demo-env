@@ -4,7 +4,7 @@ set -eo pipefail
 source ../config/dap.config
 source ../config/utils.sh
 
-login_as $DEVELOPER_USERNAME
+login_as $DEVELOPER_USERNAME $DEVELOPER_PASSWORD
 
 if ! [ "${DOCKER_EMAIL}" = "" ]; then
   echo "Deleting image pull secret."

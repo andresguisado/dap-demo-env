@@ -1,0 +1,11 @@
+#======================
+# Synchronizer Policy
+#======================
+- !group prod-vault-admins
+- !host Sync_W176485
+- !grant
+  role: !group prod-vault-admins
+  members: !host Sync_W176485
+- !policy
+  id: prod-vault
+  owner: !group prod-vault-admins
