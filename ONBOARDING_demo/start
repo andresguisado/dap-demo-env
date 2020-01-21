@@ -4,8 +4,7 @@ source ./onboard-demo.config
 
 main() {
   create_pas_safe_and_accounts
-  create_identities_and_load_policies
-
+#  create_identities_and_load_policies
 }
 
 create_pas_safe_and_accounts() {

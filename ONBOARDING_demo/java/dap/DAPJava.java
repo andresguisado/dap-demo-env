@@ -27,7 +27,7 @@ public class DAPJava {
    * void setAccessToken(token) - sets private access token member, use with authn-k8s
    * String search(searchstr) - returns json array for variables where id or annotations match searchstr
    * String variableValue(varname) - gets variable value by name using private members
-   * void loadPolicy(method,branchId,fileName) - loads policy file at branchId using method
+   * void loadPolicy(method,branchId,policyText) - loads policy text at branchId using method
    *
    ******************************************************************/
 
@@ -133,7 +133,7 @@ public class DAPJava {
     // void loadPolicy() - loads policy at a given branch using specfied method
     //
     public static void loadPolicy(String _method, String _branchId, String _policyText) {
-	String authHeader = "Token token=\\\"" + dapAccessToken + "\\\"";
+	String authHeader = "Token token=\"" + dapAccessToken + "\"";
 	String requestUrl = dapApplianceUrl + "/policies/" + dapAccount + "/policy/" + _branchId;
 	switch(_method) {
 	    case "delete":
