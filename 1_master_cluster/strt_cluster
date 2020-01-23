@@ -8,6 +8,7 @@ source ../config/utils.sh
 # Starts an DAP Master HA cluster
 
 main() {
+  ./precheck_master.sh
   ./stp_cluster
   master_network_up
   shared_volumes_up
@@ -56,6 +57,7 @@ master_up() {
     -p $CONJUR_ADMIN_PASSWORD \
     --master-altnames "$MASTER_ALTNAMES" \
     --follower-altnames "$FOLLOWER_ALTNAMES" \
+    --accept-eula		    \
     $CONJUR_ACCOUNT
 
   echo "Caching Certificate from Conjur in ../etc..."
@@ -166,7 +168,7 @@ start_cli() {
     --restart always \
     --security-opt seccomp:unconfined \
     --entrypoint sh \
-    $CLI_IMAGE_NAME \
+    $CLI_IMAGE \
     -c "sleep infinity" 
 
   echo "CLI container launched."
