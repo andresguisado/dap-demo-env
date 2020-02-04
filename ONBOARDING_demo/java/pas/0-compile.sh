@@ -1,10 +1,12 @@
 #!/bin/bash -
+PASPLATFORM_SRC="PASPlatformList.java PASPlatform.java PASPlatformGeneral.javaPAS PlatformProperties.java" 
 PASSAFE_SRC="PASSafeList.java PASSafe.java PASSafeAdd.java"
-PASACCOUNT_SRC="PASAccountList.java PASAccount.java PASPlatformProperties.java PASSecretManagement.java PASRemoteMachinesAccess.java"
+PASACCOUNT_SRC="PASAccountList.java PASAccount.java PASSecretManagement.java PASRemoteMachinesAccess.java"
 PASACCOUNTDETAILS_SRC="PASAccountDetailList.java PASAccountDetail.java KeyValue.java" 
 PASACCOUNTGROUP_SRC="PASAccountGroup.java PASAccountGroupMember.java"
 javac -cp ../gson/gson-2.8.5.jar:../javarest/JavaREST.jar \
 	PASJava.java \
+	$PASPLATFORM_SRC \
 	$PASSAFE_SRC \
 	$PASACCOUNT_SRC \
 	$PASACCOUNTDETAILS_SRC \

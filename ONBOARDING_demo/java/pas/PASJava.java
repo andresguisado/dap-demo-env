@@ -17,6 +17,9 @@ import com.google.gson.Gson;
   - void initConnection(serverHost)
   - void logon(username,password)
 
+  Platforms:
+  - PASPlatform[] getPlatforms(filter)
+
   Safes:
   - PASSafe addSafe(safeName,cpmName)
   - PASSafe[] listSafes()
@@ -48,7 +51,7 @@ public class PASJava {
     // void initConnection() - initializes base server URL
     //
     public static void initConnection(String _pasServerHost) {
-	pasServerUrl = "https://" + _pasServerHost + "/PasswordVault/api";
+	pasServerUrl = "https://" + _pasServerHost + "/PasswordVault/API";
 
 	// cuz sometimes the old way is the only way to get what you want
 	pasServerUrlClassic = "https://" + _pasServerHost + "/PasswordVault/WebServices/PIMServices.svc";
@@ -84,6 +87,50 @@ public class PASJava {
 
 /*****************************************************************
  *****************************************************************
+ **			     	PLATFORMS			**
+ *****************************************************************
+ *****************************************************************/
+
+    // ===============================================================
+    // PASPlatform[] getPlatforms(filter)
+    //
+    public static PASPlatform[] getPlatforms(String _filter) {
+        String requestUrl = pasServerUrl + "/Platforms";
+        String authHeader = pasSessionToken;
+
+	if(_filter != null) {
+	  requestUrl = requestUrl + "?" + _filter;
+	}
+
+        if(PASJava.DEBUG) {
+	    System.out.println("requestUrl: " + requestUrl);
+	}
+
+        String platformOutput = JavaREST.httpGet(requestUrl, authHeader);
+
+        if(PASJava.DEBUG) {
+            System.out.println("Raw platform listing:");
+            System.out.println(platformOutput);
+            System.out.println("");
+        }
+
+        // parse account json output into PASSafeList
+        Gson gson = new Gson();
+        PASPlatformList pasPlatformList = (PASPlatformList) gson.fromJson( platformOutput, PASPlatformList.class );
+
+        if(PASJava.DEBUG) {
+            System.out.println("PAS Platform List =====");
+            pasPlatformList.print();
+            System.out.println("======================");
+            System.out.println("");
+        }
+
+	return pasPlatformList.Platforms;
+
+    } // getPlatforms
+
+/*****************************************************************
+ *****************************************************************
  **			     	SAFES				**
  *****************************************************************
  *****************************************************************/
@@ -115,6 +162,9 @@ public class PASJava {
 	}
 
 	String addSafeOutput = JavaREST.httpPost(requestUrl, bodyContent, authHeader);
+	if (addSafeOutput == null) {
+	    return null;
+	}
 
 	if(PASJava.DEBUG) {
 	    System.out.println("Raw addSafe output:");
@@ -184,6 +234,7 @@ public class PASJava {
 
 	String requestUrl = pasServerUrlClassic + "/Safes/" + _safeName + "/Members";
 	String authHeader = pasSessionToken;
+/*
 	String bodyContent = "{"
   				+ "\"member\":{"
 				+ "\"MemberName\":\"" + _memberName + "\","
@@ -192,6 +243,35 @@ public class PASJava {
 				+    "{\"Key\":\"RetrieveAccounts\", \"Value\":true},"
 				+    "{\"Key\":\"ListAccounts\", \"Value\":true},"
 				+    "{\"Key\":\"AccessWithoutConfirmation\", \"Value\":true}"
+				+   "]"
+			        + "}"
+			   + "}";
+*/
+	String bodyContent = "{"
+  				+ "\"member\":{"
+				+ "\"MemberName\":\"" + _memberName + "\","
+    				+ "\"Permissions\":["
+				+    "{\"Key\":\"UseAccounts\", \"Value\":true},"
+				+    "{\"Key\":\"RetrieveAccounts\", \"Value\":true},"
+				+    "{\"Key\":\"ListAccounts\", \"Value\":true},"
+				+    "{\"Key\":\"AddAccounts\", \"Value\":true},"
+				+    "{\"Key\":\"UpdateAccountContent\", \"Value\":true},"
+				+    "{\"Key\":\"UpdateAccountProperties\", \"Value\":true},"
+				+    "{\"Key\":\"InitiateCPMAccountManagementOperations\", \"Value\":true},"
+				+    "{\"Key\":\"SpecifyNextAccountContent\", \"Value\":true},"
+				+    "{\"Key\":\"RenameAccounts\", \"Value\":true},"
+				+    "{\"Key\":\"DeleteAccounts\", \"Value\":true},"
+				+    "{\"Key\":\"UnlockAccounts\", \"Value\":true},"
+				+    "{\"Key\":\"ManageSafe\", \"Value\":true},"
+				+    "{\"Key\":\"ManageSafeMembers\", \"Value\":true},"
+				+    "{\"Key\":\"BackupSafe\", \"Value\":true},"
+				+    "{\"Key\":\"ViewAuditLog\", \"Value\":true},"
+				+    "{\"Key\":\"ViewSafeMembers\", \"Value\":true},"
+				+    "{\"Key\":\"RequestsAuthorizationLevel\", \"Value\":0},"
+				+    "{\"Key\":\"AccessWithoutConfirmation\", \"Value\":true},"
+				+    "{\"Key\":\"CreateFolders\", \"Value\":true},"
+				+    "{\"Key\":\"DeleteFolders\", \"Value\":true},"
+				+    "{\"Key\":\"MoveAccountsAndFolders\", \"Value\":true}"
 				+   "]"
 			        + "}"
 			   + "}";

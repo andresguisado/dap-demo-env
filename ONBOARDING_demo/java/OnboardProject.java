@@ -1,4 +1,9 @@
 /*
+ * OnBoard a new development project from an access request record.
+ * - create safe in EPV
+ * - create accounts in safe
+ * - create identity for project
+ * - apply policy for project
  */
 
 import javax.net.ssl.HostnameVerifier;
@@ -11,6 +16,11 @@ import java.security.cert.X509Certificate;
 import java.security.NoSuchAlgorithmException;
 import java.security.KeyManagementException;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.stream.Stream;
 import com.google.gson.Gson;
 
 public class OnboardProject {
@@ -23,6 +33,7 @@ public class OnboardProject {
 	PASJava.DEBUG=false;
 	DAPJava.DEBUG=false;
 	JavaREST.DEBUG=false;
+	OnboardProject.DEBUG=true;
 
 	// turn off all cert validation - FOR DEMO ONLY
 	disableSSL(); 
@@ -31,46 +42,99 @@ public class OnboardProject {
 	PASJava.initConnection( System.getenv("PAS_IIS_SERVER_IP") );
 	PASJava.logon(	System.getenv("PAS_ADMIN_NAME"), System.getenv("PAS_ADMIN_PASSWORD") );
 
-	// Get safe parameters
-	String pasSafeName = System.getenv("PAS_SAFE_NAME");
-	String pasCPMName = System.getenv("PAS_CPM_NAME");
-	String pasLOBName = System.getenv("PAS_LOB_NAME");
-
-        System.out.println("Creating safe:\n"
-			  + "  Safe name: " + pasSafeName + "\n"
-			  + "  LOB member: " + pasLOBName);
-	PASSafe newSafe = PASJava.addSafe(pasSafeName, pasCPMName);
-	PASJava.addSafeMember(pasSafeName, pasLOBName);
-	PASJava.addSafeMember(pasSafeName, "Administrator");	// Always add Administrator as safe member
-
-	// Get account parameters
-	String pasAccountName = System.getenv("PAS_ACCOUNT_NAME");
-	String pasPlatformId = System.getenv("PAS_PLATFORM_ID");
-	String pasAddress = System.getenv("PAS_ADDRESS");
-	String pasUserName = System.getenv("PAS_USERNAME");
-	String pasSecretType = System.getenv("PAS_SECRET_TYPE");
-	String pasSecretValue = System.getenv("PAS_SECRET_VALUE");
-
-        System.out.println("Creating account:\n"
-			 + "  Account: " + pasAccountName + "\n"
-			 + "  Platform ID: " + pasPlatformId);
-	PASAccount pasAccount = PASJava.addAccount(pasSafeName,
-						   pasAccountName,
-						   pasPlatformId,
-						   pasAddress,
-						   pasUserName,
-						   pasSecretType,
-						   pasSecretValue);
-	// Apply Vault/Conjur sync policies
-	String pasVaultName = System.getenv("PAS_VAULT_NAME");
-	preloadSyncPolicy(pasVaultName, pasLOBName, pasSafeName);
+	processAccessRequest( getAccessRequest() );
 
     } // main()
 
     // ==========================================
-    // preloadSyncPolicy(vaultName,lobName,safeName)
+    // getAccessRequest()
     //
-    public static void preloadSyncPolicy(String _vaultName, String _lobName, String _safeName) {
+    public static AccessRequest getAccessRequest() {
+	String inputJson = System.getenv("ACCESS_REQUEST_JSON_FILE");
+
+	if (OnboardProject.DEBUG) {
+	  System.out.println("Input filename:" + inputJson);
+        }
+
+	String ARjson = "";
+	try
+	{
+            ARjson = new String ( Files.readAllBytes( Paths.get(inputJson) ) );
+	} 
+	catch (IOException e) 
+	{
+	    e.printStackTrace();
+	}
+        Gson gson = new Gson();
+        AccessRequest newAR = (AccessRequest) gson.fromJson( ARjson, AccessRequest.class );
+
+	if (OnboardProject.DEBUG) {
+	  newAR.print();
+        }
+
+	return newAR;
+
+    } // getAccessRequest
+
+    // ==========================================
+    // processAccessRequest(accessRequest)
+    //
+    public static void processAccessRequest(AccessRequest _accessRequest) {
+
+	// add Safe and populate it if it doesn't exist
+	PASSafe newSafe = addSafe(_accessRequest);
+	if (newSafe != null) {
+	    addMembers(_accessRequest);
+	    addAccounts(_accessRequest);
+	}
+	// Apply Vault/Conjur sync policies
+	applyPolicy(_accessRequest);
+
+	addIdentities(_accessRequest);
+
+    } // processAccessRequest
+
+    // ==========================================
+    // addSafe(accessRequest)
+    //
+    public static PASSafe addSafe(AccessRequest _accessRequest) {
+	return PASJava.addSafe(_accessRequest.safeName, _accessRequest.cpmName);
+    } // addSafe
+
+    // ==========================================
+    // addMembers(accessRequest)
+    //
+    public static void addMembers(AccessRequest _accessRequest) {
+	// add safe members, with appropriate access privileges
+	PASJava.addSafeMember(_accessRequest.safeName, _accessRequest.lobName);
+	PASJava.addSafeMember(_accessRequest.safeName, "Administrator");
+    } // addSafe
+
+    // ==========================================
+    // addAccounts(accessRequest)
+    //
+    public static void addAccounts(AccessRequest _accessRequest) {
+	for(Integer i=0; i<_accessRequest.accountRequests.length; i++) {
+	    System.out.println("Creating account:\n"
+			 + "  Account: " + _accessRequest.accountRequests[i].accountName + "\n"
+			 + "  Platform ID: " + _accessRequest.accountRequests[i].platformId);
+ 	    PASAccount pasAccount = PASJava.addAccount(_accessRequest.safeName,
+						_accessRequest.accountRequests[i].accountName,
+						_accessRequest.accountRequests[i].platformId,
+						_accessRequest.accountRequests[i].address,
+						_accessRequest.accountRequests[i].userName,
+						_accessRequest.accountRequests[i].secretType,
+						_accessRequest.accountRequests[i].secretValue);
+	}
+    } //addAccounts
+
+    // ==========================================
+    // applyPolicy(accessRequest)
+    //
+    public static void applyPolicy(AccessRequest _accessRequest) {
+	String _vaultName = _accessRequest.vaultName;
+	String _lobName = _accessRequest.lobName;
+	String _safeName = _accessRequest.safeName;
 
         System.out.println("Preloading sync policy:\n"
 			 + "  Vault name: " + _vaultName + "\n"
@@ -82,11 +146,11 @@ public class OnboardProject {
                                 System.getenv("CONJUR_ACCOUNT")
                                 );
         String userApiKey = DAPJava.authnLogin(
-                                System.getenv("CONJUR_USER"),
-                                System.getenv("CONJUR_PASSWORD")
+                                System.getenv("CONJUR_ADMIN_USERNAME"),
+                                System.getenv("CONJUR_ADMIN_PASSWORD")
                                 );
         DAPJava.authenticate(
-                                System.getenv("CONJUR_USER"),
+                                System.getenv("CONJUR_ADMIN_USERNAME"),
                                 userApiKey
                                 );
 
@@ -113,7 +177,17 @@ public class OnboardProject {
         // load policy using default "append" method 
         DAPJava.loadPolicy("append", "root", policyText);
 
-    } // preloadSyncPolicy()
+    } // applyPolicy()
+
+    // ==========================================
+    // addIdentities(accessRequest)
+    //
+    public static void addIdentities(AccessRequest _accessRequest) {
+	// create "- !xxx yyy" yaml string and apply it
+	for(Integer i=0; i<_accessRequest.identities.length; i++) {
+          DAPJava.loadPolicy("append", "root", "- " + _accessRequest.identities[i].identity);
+	}
+    } // addIdentities
 
 /*********************************************************
  *********************************************************

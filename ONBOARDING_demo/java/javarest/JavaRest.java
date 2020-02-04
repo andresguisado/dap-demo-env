@@ -43,8 +43,13 @@ public class JavaREST {
 	    conn.setRequestProperty("Accept", "application/json");
 	    conn.setRequestProperty("Authorization", auth_header);
 
-	    if (conn.getResponseCode() != 200) {
-			throw new RuntimeException("Failed : HTTP error code : "
+	    switch(conn.getResponseCode()) {
+		case 200 :
+		    break;
+
+		default :
+		    output = null;
+		    throw new RuntimeException("Failed : HTTP error code : "
 					+ conn.getResponseCode());
 	    }
 
@@ -59,6 +64,10 @@ public class JavaREST {
 
 	    conn.disconnect();
 
+	} catch (RuntimeException e) {
+	  if(JavaREST.DEBUG) {
+	    e.printStackTrace();
+	  }
 	} catch (MalformedURLException e) {
 	    e.printStackTrace();
 	} catch (IOException e) {
@@ -92,9 +101,14 @@ public class JavaREST {
 	    os.write(bodyContent.getBytes());
 	    os.flush();
 
-	    if (conn.getResponseCode() != 200 
-		&& conn.getResponseCode() != 201) {
-			throw new RuntimeException("Failed : HTTP error code : "
+	    switch(conn.getResponseCode()) {
+		case 200 :
+		case 201 :
+		    break;
+
+		default :
+		    output = null;
+		    throw new RuntimeException("Failed : HTTP error code : "
 					+ conn.getResponseCode());
 	    }
 
@@ -108,6 +122,10 @@ public class JavaREST {
 
 	    conn.disconnect();
 
+	} catch (RuntimeException e) {
+	  if(JavaREST.DEBUG) {
+	    e.printStackTrace();
+	  }
 	} catch (MalformedURLException e) {
 	    e.printStackTrace();
 	} catch (IOException e) {
@@ -192,9 +210,13 @@ public class JavaREST {
 	    os.write(bodyContent.getBytes());
 	    os.flush();
 
-	    if (conn.getResponseCode() != 201) {
-		throw new RuntimeException("Failed : HTTP error code : "
-					+ conn.getResponseCode());
+	    switch(conn.getResponseCode()) {
+		case 201 :
+		    break;
+		default :
+		    output = null;
+		    throw new RuntimeException("Failed : HTTP error code : "
+							+ conn.getResponseCode());
 	    }
 
 	    BufferedReader br = new BufferedReader(new InputStreamReader(
