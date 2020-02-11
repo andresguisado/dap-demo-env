@@ -1,16 +1,9 @@
 #!/bin/bash
 
-# If the Master keys are encrypted, you must decrypt-all before running this script.
+# Brings up and configures a Follower using unencrypted keys. 
+# This script will fail if Master keys are encrypted.
 
-export CONJUR_APPLIANCE_IMAGE=conjur-appliance:11.2.1
-export CONJUR_MASTER_CONTAINER_NAME=conjur1
-export CONJUR_MASTER_HOST_NAME=conjur-master-vbx
-export CONJUR_MASTER_HOST_IP=192.168.99.100
-export FOLLOWER_SEED_FILE=./follower-seed.tar
-export CONJUR_FOLLOWER_CONTAINER_NAME=conjur-follower
-export CONJUR_FOLLOWER_PORT=30444
-export AUTHENTICATOR_ID=dappoc
-export CONJUR_AUTHENTICATORS=authn,authn-k8s/$AUTHENTICATOR_ID
+source ./keymgmt.config
 
 ./stop
 

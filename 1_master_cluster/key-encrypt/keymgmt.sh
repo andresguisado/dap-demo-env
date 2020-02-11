@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export MASTER_KEY_FILE=./master-key
+source ./keymgmt.config
 
 ###########################################################################
 # After initial encryption of the server keys with "evoke keys encrypt",
@@ -92,8 +92,8 @@ initial-encrypt() {
   if [[ "$(docker exec $cname evoke role)" != "master" ]]; then
     echo "Initial key encryption only works on the Master node. Exiting..."
     exit -1
-  elif [[ "$(list-keys $cname | grep '.enc')" != "" ]]; then
-    echo "Keys already encrypted. Decrypt all nodes before destroying master key."
+  elif [[ -f "$MASTER_KEY_FILE" ]]; then
+    echo "Master key file exists. Decrypt all keys on all nodes and delete master key file before running."
     exit -1
   fi
 
