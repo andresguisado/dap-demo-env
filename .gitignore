@@ -5,6 +5,7 @@
 *.z
 *.pem
 tmp.*
+SELF_SERVE_demo/java/gson/gson-2.8.5.jar
 .minishift/
 .minikube/
 .vagrant/
