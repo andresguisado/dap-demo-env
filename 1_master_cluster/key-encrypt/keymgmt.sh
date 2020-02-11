@@ -85,7 +85,7 @@ main() {
 }
 
 #########################
-#
+# Performs initial key encryption on Master node, creating MASTER_KEY_FILE.
 initial-encrypt() {
   local cname=$1; shift
 
@@ -98,7 +98,7 @@ initial-encrypt() {
   fi
 
   lock-node $cname
-  gen-new-node-key $cname
+  gen-new-master-key $cname
   encrypt-all-server-keys $cname
   unlock-node $cname
   restart-services $cname
@@ -115,7 +115,7 @@ lock-node() {
 }
 
 #########################
-gen-new-node-key() {
+gen-new-master-key() {
   local cname=$1; shift
   docker exec $cname openssl rand 32 > $MASTER_KEY_FILE
 }
@@ -141,7 +141,7 @@ unlock-node() {
 }
 
 #########################
-# Restart DB, Conjur and NGINX services after locking
+# Restart DB, Conjur and NGINX services after unlocking keys
 restart-services() {
   local cname=$1; shift
   docker exec $cname bash -c "sv restart pg && sv restart conjur && sv restart nginx"

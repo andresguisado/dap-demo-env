@@ -19,11 +19,9 @@ docker run -d \
     --security-opt seccomp:unconfined \
     $CONJUR_APPLIANCE_IMAGE
 
-if $NO_DNS; then
-    # add entry to follower's /etc/hosts so $CONJUR_MASTER_HOST_NAME resolves
-    docker exec -it $CONJUR_FOLLOWER_CONTAINER_NAME \
+# add entry to follower's /etc/hosts so $CONJUR_MASTER_HOST_NAME resolves
+docker exec -it $CONJUR_FOLLOWER_CONTAINER_NAME \
         bash -c "echo \"$CONJUR_MASTER_HOST_IP $CONJUR_MASTER_HOST_NAME\" >> /etc/hosts"
-fi
 
 echo "Initializing Conjur Follower"
 docker cp $ENC_FOLLOWER_SEED_FILE \
