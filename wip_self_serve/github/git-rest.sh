@@ -5,9 +5,9 @@ export _owner=jodybot
 export _repo=policy-ops
 
 export loginname=jodybot
-export botToken=$(cat git-token-jodybot)
+export botToken=$(cat ~/git-tokens/git-token-jodybot)
 export prReviewerName="jodyhuntatx"
-export prReviewerToken=$(cat git-token-jodyhuntatx)
+export prReviewerToken=$(cat ~/git-tokens/git-token-jodyhuntatx)
 
 main() {
   if [[ $# < 3 ]]; then echo $usageMsg; exit -1; fi
