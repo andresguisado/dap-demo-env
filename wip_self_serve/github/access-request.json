@@ -3,11 +3,11 @@
   "cpmName": "PasswordManager",
   "lobName": "CICD",
   "requestor": "Jody Hunt",
-  "projectName": "ProjectXOM",
-  "safeName": "XOMDemoWed",
+  "projectName": "DualAccountCreate",
+  "safeName": "testsafe1",
   "identities": [
     {
-      "identity": "!host conjur/authn-k8s/dappoc/apps/testapps/service_account/test-app-summon-sidecar"
+      "identity": "!host sec2-svc-acct"
     }
   ],
   "accountRequests": [
