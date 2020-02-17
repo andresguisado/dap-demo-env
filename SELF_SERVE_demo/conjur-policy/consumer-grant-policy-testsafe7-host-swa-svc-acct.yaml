@@ -1,5 +1,0 @@
----
-# Grant safe consumer role to a Conjur role (host/layer/user/group)
-- !grant
-  role: !group DemoVault/CICD/testsafe7/delegation/consumers
-  member: !host swa-svc-acct
