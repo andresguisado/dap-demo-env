@@ -1,6 +1,7 @@
 #!/bin/bash
 export APIVERSION="application/vnd.github.v3+json"
-export usageMsg="Usage: $0 [ submit | approve | merge ] <project-name> <filename>"
+export usageMsg="Usage: $0 [ submit | approve | merge | list ] <project-name> <filename>"
+export LOGDIR=./logs
 export _owner=jodybot
 export _repo=policy-ops
 
@@ -13,7 +14,7 @@ main() {
   if [[ $# < 3 ]]; then echo $usageMsg; exit -1; fi
   gitCmd=$1
   case $gitCmd in
-    submit | approve | merge)
+    submit | approve | merge | list)
 	;;
     *)
 	echo ${usageMsg}
@@ -24,7 +25,7 @@ main() {
   mergeBranch=$2
   commitPath="$(date +%Y)/$(date +%m)/$(date +%d)/${mergeBranch}"
   commitFile=$3
-  export LOGFILE=./${mergeBranch}.log
+  export LOGFILE=${LOGDIR}/${mergeBranch}.log
   touch $LOGFILE
 
   case $gitCmd in
@@ -32,23 +33,22 @@ main() {
   	createBranch 	  ${_owner} ${_repo} ${baseBranch} ${mergeBranch}
 	commitFile 	  ${_owner} ${_repo}               ${mergeBranch} ${commitPath} ${commitFile}
 	createPullRequest ${_owner} ${_repo}               ${mergeBranch} ${commitPath} ${commitFile} 
+	requestPRReview   ${_owner} ${_repo}               ${mergeBranch} ${commitPath} ${commitFile} 
 	;;
-
     approve)
 	createPRReview    ${_owner} ${_repo}               ${mergeBranch} ${commitPath} ${commitFile} 
 	;;
-
     merge)
 	mergePullRequest  ${_owner} ${_repo} ${baseBranch} ${mergeBranch} ${commitPath} ${commitFile} 
 	;;
-
+    list)
+	getCommitMessages ${_owner} ${_repo}               ${mergeBranch} ${commitPath} ${commitFile} 
+	;;
     *)
 	echo ${usageMsg}
 	exit -1
   esac
 
-#  getCommitMessages ${_owner} ${_repo}               ${mergeBranch} ${commitPath} ${commitFile} 
-#  getCommitMessages ${_owner} ${_repo} ${baseBranch}                ${commitPath} ${commitFile} 
 }
 
 #####################
@@ -63,7 +63,9 @@ createBranch() {
   # get hash of head of base branch
   branch_sha=$(curl -s -X GET \
 	-H "Accept: $APIVERSION" \
-	https://api.github.com/repos/${ownerName}/${repoName}/git/refs/heads/${baseBranch} | jq -r .object.sha)
+	https://api.github.com/repos/${ownerName}/${repoName}/git/refs/heads/${baseBranch} \
+	| jq -r .object.sha
+  )
 
   if [[ "$branch_sha" == "" ]]; then
     echo "Base branch $baseBranch not found."
@@ -80,9 +82,27 @@ createBranch() {
 	    }" \
 	https://api.github.com/repos/${ownerName}/${repoName}/git/refs
   )
+
+  # update branch protections to require X number of reviews before merge allowed
+  # preview feature - hence non-versioned Accept header
+  updateBranchMsg=$(curl -s -X PUT				\
+	-H "Accept: application/vnd.github.luke-cage-preview+json" \
+	-H "Authorization: token ${botToken}"			\
+	-d "{ 							\
+		\"required_status_checks\": null,		\
+		\"enforce_admins\": null,			\
+		\"required_pull_request_reviews\": {		\
+		    \"required_approving_review_count\": 1	\
+	    	},						\
+		\"restrictions\": null				\
+	    }"							\
+	https://api.github.com/repos/${ownerName}/${repoName}/branches/${mergeBranch}/protection
+  )
+
   echo >> $LOGFILE
   echo "createBranch($baseBranch,$mergeBranch) =============" >> $LOGFILE
   echo $createBranchMsg | jq . >> $LOGFILE
+  echo $updateBranchMsg | jq . >> $LOGFILE
 }
 
 #####################
@@ -101,7 +121,8 @@ commitFile() {
   file_sha=$(curl -s \
 	-H "Accept: $APIVERSION" \
 	https://api.github.com/repos/${ownerName}/${repoName}/contents/${fqFilePath}?ref=${branchName} \
-	| jq -r .sha)
+	| jq -r .sha
+  )
 
   commit_message="$branchName, $fileName, $(date +%Y-%m-%d/%H:%M:%S)"
 
@@ -144,10 +165,20 @@ getCommitMessages() {
   local filePath=$1; shift
   local fileName=$1; shift
 
-  curl -s -X GET \
-	-H "Accept: $APIVERSION" \
+  http_code=$(curl -s -X GET 		\
+	-o /dev/null			\
+	-w "%{http_code}\n"		\
+	-H "Accept: $APIVERSION"	\
+	https://api.github.com/repos/${ownerName}/${repoName}/commits?sha=${branchName} 
+  )
+  if [[ ${http_code} == 200 ]]; then
+    curl -s -X GET 			\
+	-H "Accept: $APIVERSION"	\
 	https://api.github.com/repos/${ownerName}/${repoName}/commits?sha=${branchName} \
 	| jq .[].commit.message | grep ${branchName}
+  else
+    echo "No commits found for branch ${branchName}."
+  fi
 }
 
 #####################
@@ -177,13 +208,44 @@ createPullRequest() {
 }
 
 #####################
-createPRReview() {
+requestPRReview() {
   local ownerName=$1; shift
   local repoName=$1; shift
   local branchName=$1; shift
   local filePath=$1; shift
   local fileName=$1; shift
 
+
+  echo "requestPRReview(${branchName},${fileName})"
+
+  pullNumber=$(curl -s -X GET 		   \
+	-H "Accept: ${APIVERSION}" 	   \
+	-H "Authorization: token ${botToken}" \
+	https://api.github.com/repos/${ownerName}/${repoName}/pulls \
+	| jq .[].number
+  )
+  requestPRReviewMsg=$(curl -s -X POST   		\
+	-H "Accept: ${APIVERSION}" 	   		\
+	-H "Authorization: token ${botToken}" 	\
+	-d "{ 				   		\
+		\"reviewers\": [			\
+		    \"${prReviewerName}\"		\
+		]					\
+	    }" 				   		\
+	https://api.github.com/repos/${ownerName}/${repoName}/pulls/${pullNumber}/requested_reviewers
+  )
+  echo >> $LOGFILE
+  echo "requestPRReview(${branchName},${fileName}) =============" >> $LOGFILE
+  echo ${requestPRReviewMsg} | jq . >> $LOGFILE
+}
+
+#####################
+createPRReview() {
+  local ownerName=$1; shift
+  local repoName=$1; shift
+  local branchName=$1; shift
+  local filePath=$1; shift
+  local fileName=$1; shift
 
   echo "createPullRequestReview(${branchName},${fileName})"
 
@@ -232,34 +294,20 @@ mergePullRequest() {
 	    }"					\
 	https://api.github.com/repos/${ownerName}/${repoName}/merges
   )
-
   case ${http_code} in
     201 | 204)
 	echo "Merge successful."
 	echo "Merge successful." >> $LOGFILE
 	;;
-
     404)
 	echo "Merge branch or base does not exist."
 	echo "Merge branch or base does not exist." >> $LOGFILE
 	;;
-
     409)
 	echo "Merge conflict, please resolve."
 	echo "Merge conflict, please resolve." >> $LOGFILE
 	;;
   esac
-}
-
-#####################
-authn() {
-  local username=$1; shift
-  local token=$1; shift
-
-  # authenticate user
-  curl -s -H "Accept: $APIVERSION" \
-	-u $username:${token} \
-	https://api.github.com/users/$username
 }
 
 main "$@"
