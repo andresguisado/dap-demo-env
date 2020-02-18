@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
+import java.util.Random;
 import com.google.gson.Gson;
 
 public class OnboardProject {
@@ -118,6 +119,7 @@ public class OnboardProject {
 			 + "  Account: " + _accessRequest.accountRequests[i].accountName + "\n"
 			 + "  Platform ID: " + _accessRequest.accountRequests[i].platformId);
 	    }
+ 	    _accessRequest.accountRequests[i].secretValue = getRandomHexString(16);
  	    PASAccount pasAccount = PASJava.addAccount(_accessRequest.safeName,
 						_accessRequest.accountRequests[i].accountName,
 						_accessRequest.accountRequests[i].platformId,
@@ -237,4 +239,17 @@ public class OnboardProject {
 
     } // disableSSL
  
-} // AnnotateDAPVars
+    // ==========================================
+    // void getRandomHexString()
+    //
+    private static String getRandomHexString(int numchars){
+        Random r = new Random();
+        StringBuffer sb = new StringBuffer();
+        while(sb.length() < numchars){
+            sb.append(String.format("%08x", r.nextInt()));
+        }
+
+        return sb.toString().substring(0, numchars);
+    }
+
+} // OnboardProject

@@ -1,6 +1,6 @@
 #!/bin/bash
 export APIVERSION="application/vnd.github.v3+json"
-export usageMsg="Usage: $0 [ submit | approve | merge | list ] <project-name> <filename>"
+export usageMsg="Usage: $0 [ submit | approve | merge | list ] <access-request-filename>"
 export LOGDIR=./logs
 export _owner=jodybot
 export _repo=policy-ops
@@ -11,7 +11,7 @@ export prReviewerName="jodyhuntatx"
 export prReviewerToken=$(cat ~/git-tokens/git-token-jodyhuntatx)
 
 main() {
-  if [[ $# < 3 ]]; then echo $usageMsg; exit -1; fi
+  if [[ $# != 2 ]]; then echo $usageMsg; exit -1; fi
   gitCmd=$1
   case $gitCmd in
     submit | approve | merge | list)
@@ -20,11 +20,11 @@ main() {
 	echo ${usageMsg}
 	exit -1
   esac
+  commitFile=$2
 
   baseBranch=master
-  mergeBranch=$2
+  mergeBranch=$(cat ${commitFile} | jq -r .projectName)
   commitPath="$(date +%Y)/$(date +%m)/$(date +%d)/${mergeBranch}"
-  commitFile=$3
   export LOGFILE=${LOGDIR}/${mergeBranch}.log
   touch $LOGFILE
 
@@ -94,7 +94,8 @@ createBranch() {
 		\"required_pull_request_reviews\": {		\
 		    \"required_approving_review_count\": 1	\
 	    	},						\
-		\"restrictions\": null				\
+		\"restrictions\": null,				\
+		\"allow_deletions\": true			\
 	    }"							\
 	https://api.github.com/repos/${ownerName}/${repoName}/branches/${mergeBranch}/protection
   )
