@@ -1,0 +1,7 @@
+#!/bin/bash
+source ./azure.config
+
+docker stop $CONJUR_MASTER_CONTAINER_NAME && \
+	docker rm $CONJUR_MASTER_CONTAINER_NAME > /dev/null
+docker stop $CLI_CONTAINER_NAME && \
+	docker rm $CLI_CONTAINER_NAME > /dev/null

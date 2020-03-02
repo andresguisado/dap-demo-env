@@ -18,4 +18,4 @@
         ccp_safe: "CICD_Secrets"
         ccp_folder: 'root'
         ccp_object_name: "Database-Oracle-OracleDBuser"
-    - debug: msg="{{ response }}"  
+    - debug: msg="{{ response.content }}"  

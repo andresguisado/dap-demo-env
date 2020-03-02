@@ -3,11 +3,11 @@
   "cpmName": "PasswordManager",
   "lobName": "CICD",
   "requestor": "Jody Hunt",
-  "projectName": "DemoProject",
-  "safeName": "DemoProject2",
+  "projectName": "DBDemo1",
+  "safeName": "DBSafe1",
   "identities": [
     {
-      "identity": "!host conjur/authn-k8s/dappoc/apps/testapps/service_account/test-app-summon-sidecar"
+      "identity": "!host client/node"
     }
   ],
   "accountRequests": [

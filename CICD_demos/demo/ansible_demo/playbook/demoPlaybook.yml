@@ -1,0 +1,79 @@
+---
+- hosts: localhost
+
+  tasks:
+    - name: Authenticate to Conjur via API for JWT
+      uri:
+        url: "{{ ansible_env.CONJUR_APPLIANCE_URL }}/authn/dev/host%2Fansible-tower%2Fnodes%2Ftower%2Fdev/authenticate"
+        method: POST
+        timeout: 10
+        validate_certs: no
+        headers:
+          Content-Type: "text/plain"
+        body: "{{ ansible_env.CONJUR_AUTHN_API_KEY }}"
+        return_content: yes
+        status_code: 200
+        body_format: json
+      register: token_json
+      delegate_to: localhost
+      no_log: yes
+
+    - name: Set Conjur API JWT to Fact Named cyberark_conjur_jwt
+      set_fact:
+        cyberark_conjur_jwt: "{{ token_json.content | b64encode | replace('\r\n', '') }}"
+      no_log: yes
+
+    - name: Retrieve SSH Private Key for Hosts
+      uri:
+        url: "{{ansible_env.CONJUR_APPLIANCE_URL}}/secrets/dev/variable/ansible-tower%2Fnodes%2Frhel01.192.168.3.104.xip.io%2Fssh%2Fprivatekey?version=1"
+        method: GET
+        timeout: 10
+        validate_certs: no
+        headers:
+          Authorization: Token token="{{ cyberark_conjur_jwt }}"
+          Content-Type: "application/json"
+        return_content: yes
+        status_code: 200      
+      register: variable_value
+      delegate_to: localhost
+      no_log: yes
+
+    - name: Set Conjur Appliance URL to Fact Named conjur_appliance_url
+      set_fact:
+        conjur_appliance_url: "{{ ansible_env.CONJUR_APPLIANCE_URL }}"
+      delegate_to: localhost
+      no_log: yes
+
+    - name: Set Conjur Public SSL Certificate to Fact Named conjur_ssl_certificate
+      set_fact:
+        conjur_ssl_certificate: "{{ ansible_env.CLIENT_CERTIFICATE }}"
+
+    - name: Initiate TempFile Module for SSH Private Key
+      tempfile:
+        state: file
+        suffix: key
+      register: temp_key
+      no_log: yes
+
+    - name: Write SSH Private Key to TempFile
+      copy:
+        dest: "{{ temp_key.path }}"
+        content: "{{ variable_value.content }}"
+      delegate_to: localhost
+      changed_when: false
+      no_log: yes
+      
+    - name: Set SSH Private Key TempFile to Fact Named cyberark_ssh_privatekey
+      set_fact:
+        cyberark_ssh_privatekey: "{{ temp_key.path }}"
+      no_log: yes
+
+- hosts: all
+  gather_facts: yes
+  vars:
+    ansible_ssh_user: "root"
+    ansible_ssh_private_key_file: "{{ hostvars['localhost']['cyberark_ssh_privatekey'] }}"
+    conjur_account: "dev"
+    conjur_appliance_url: "{{ hostvars['localhost']['conjur_appliance_url'] }}"
+    conjur_ssl_certificate: "{{ hostvars['localhost']['conjur_ssl_certificate'] }}"
+    conjur_jwt: "{{ hostvars['localhost']['cyberark_conjur_jwt'] }}"

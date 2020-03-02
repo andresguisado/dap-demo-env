@@ -1,2 +1,3 @@
 #!/bin/bash
-ssh -i ~/.ssh/id_oshift ocuser@jodytest.eastus.cloudapp.azure.com
+source conjur_setup/azure.config
+ssh -i $AZURE_SSH_KEY $LOGIN_USER@$AZURE_PUB_DNS
