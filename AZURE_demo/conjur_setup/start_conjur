@@ -27,6 +27,8 @@ master_up() {
     --security-opt seccomp:unconfined \
     $CONJUR_APPLIANCE_IMAGE 
 
+  sleep 15	# wait till container fully started
+
   # Configure Conjur Master node
   echo "Configuring Conjur master..."
   sudo docker exec $CONJUR_MASTER_CONTAINER_NAME \

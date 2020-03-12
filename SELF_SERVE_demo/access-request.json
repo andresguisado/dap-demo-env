@@ -3,11 +3,11 @@
   "cpmName": "PasswordManager",
   "lobName": "CICD",
   "requestor": "Jody Hunt",
-  "projectName": "DBDemo1",
-  "safeName": "DBSafe1",
+  "projectName": "BSWHDemo",
+  "safeName": "BSWHDemo",
   "identities": [
     {
-      "identity": "!host client/node"
+      "identity": "!host client/node1"
     }
   ],
   "accountRequests": [
