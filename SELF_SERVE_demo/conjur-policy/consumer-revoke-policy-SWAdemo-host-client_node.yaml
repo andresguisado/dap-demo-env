@@ -1,5 +1,0 @@
----
-# Revoke safe consumer role to a Conjur role (host/layer/user/group)
-- !revoke
-  role: !group DemoVault/CICD/SWAdemo/delegation/consumers
-  member: !host client/node
