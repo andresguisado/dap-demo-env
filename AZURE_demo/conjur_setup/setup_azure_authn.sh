@@ -2,7 +2,6 @@
 
 function main() {
    load_policies
-   exit
    initialize_variables
    initialize_authenticator
 }
