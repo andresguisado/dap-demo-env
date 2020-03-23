@@ -3,4 +3,4 @@
   roles:
   - !group conjur/authn-iam/dev/clients
   members:
-  - !host cust-portal/313705343335/EC2SecretsAccess
+  - !host cust-portal/475601244925/GenericReadOnly

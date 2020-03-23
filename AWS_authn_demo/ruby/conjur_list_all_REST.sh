@@ -15,9 +15,6 @@ main() {
     exit -1
   fi
 
-  urlify "$variable_name"
-  variable_name=$URLIFIED
-
   curl -sk \
 	-H "Content-Type: application/json" \
 	-H "Authorization: Token token=\"$AUTHN_TOKEN\"" \

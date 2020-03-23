@@ -71,8 +71,7 @@
 # grant role that enables subscription identities to authenticate
 - !grant
   role: !group conjur/authn-azure/sub1/apps
-  members:
-  - !group sub1-apps
+  member: !group sub1-apps
 
 - !grant
   role: !group conjur/authn-azure/sub2/apps

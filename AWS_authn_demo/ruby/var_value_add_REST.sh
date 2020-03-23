@@ -3,7 +3,8 @@
 source ./demo.config
 
 # Authenticates as admin user and sets value of a specified variable
-
+AUTHN_USERNAME=admin
+AUTHN_PASSWORD=$CONJUR_ADMIN_PASSWORD
 AUTHN_TOKEN=""
 
 ################  MAIN   ################
@@ -38,15 +39,6 @@ main() {
 # AUTHN USER - sets AUTHN_TOKEN globally
 # - no arguments
 authn_user() {
-  if [[ "$AUTHN_USERNAME" == "" ]]; then
-   printf "\nEnter admin user name: "
-   read admin_uname
-   printf "Enter the admin password (it will not be echoed): "
-   read -s admin_pwd
-   export AUTHN_USERNAME=$admin_uname
-   export AUTHN_PASSWORD=$admin_pwd
-  fi
-
   # Login user, authenticate and set authn token
   local api_key=$(curl \
                     -sk \

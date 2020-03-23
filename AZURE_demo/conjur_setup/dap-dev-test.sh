@@ -1,13 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
+# Test var list
 #test-var-sub1-rgrp1
 #test-var-sub1-rgrp1-sid1
 #test-var-sub1-rgrp1-uid1
+#test-var-sub1-rgrp2-uid1
 #test-var-sub2-rgrp1-uid1
 
 source ./azure.config
-
 
 function main() {
    echo "###############################"
@@ -63,7 +64,6 @@ function user_assigned_identity() {
     echo "Secret to retrieve: $uid_secret_name"
 
     user_assigned_identity_token_endpoint="http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&client_id=${uid_client_id}&resource=https%3A%2F%2Fmanagement.azure.com%2F"
-
     getConjurTokenWithAzureIdentity $user_assigned_identity_token_endpoint $uid_hostname
     getConjurSecret $uid_secret_name
 }
@@ -78,7 +78,6 @@ function system_assigned_identity() {
     echo "Secret to retrieve: $sid_secret_name"
 
     system_assigned_identity_token_endpoint="http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https%3A%2F%2Fmanagement.azure.com%2F"
-
     getConjurTokenWithAzureIdentity $system_assigned_identity_token_endpoint $sid_hostname
     getConjurSecret $sid_secret_name
 }
@@ -93,7 +92,6 @@ function rgroup_identity() {
     echo "Secret to retrieve: $rgrpid_secret_name"
 
     rgroup_identity_token_endpoint="http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https%3A%2F%2Fmanagement.azure.com%2F"
-
     getConjurTokenWithAzureIdentity $rgroup_identity_token_endpoint $rgrpid_hostname
     getConjurSecret $rgrpid_secret_name
 }
@@ -171,4 +169,4 @@ function urlify() {
         echo $str
 }
 
-main
+main "$@"

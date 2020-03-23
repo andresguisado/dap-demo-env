@@ -15,11 +15,10 @@
   id: lambda1
   body:
   # The host ID is the AWS acct # & IAM role we wish to authenticate.
-  - !host 313705343335/EC2SecretsAccess
-
+  - !host 475601244925/ReadOnlyAccess
 # add host to clients group authorized to call the authn-iam service
 - !grant
   roles:
   - !group conjur/authn-iam/dev/clients
   members:
-  - !host lambda1/313705343335/EC2SecretsAccess
+  - !host lambda1/475601244925/ReadOnlyAccess

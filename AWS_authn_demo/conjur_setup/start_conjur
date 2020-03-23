@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 source ./aws.config
 
@@ -27,26 +27,24 @@ master_up() {
     --security-opt seccomp:unconfined \
     $CONJUR_APPLIANCE_IMAGE 
 
-  # turn of IPV6 listening in Master
-  sudo docker exec $CONJUR_MASTER_CONTAINER_NAME \
-	/bin/sed -i 's/^.*\[\:\:\]\:80\;/  listen 127.0.0.1:80\;/' /etc/nginx/sites-enabled/conjur
-  sudo docker exec $CONJUR_MASTER_CONTAINER_NAME \
-	/bin/sed -i 's/^.*\[\:\:1\]\:80\;//' /etc/nginx/sites-enabled/conjur
+  echo "Waiting 15 seconds for Conjur Master container to initialize before configuring..."
+  sleep 15
 
   # Configure Conjur Master node
   echo "Configuring Conjur master..."
-  sudo docker exec $CONJUR_MASTER_CONTAINER_NAME \
-                evoke configure master     \
-                -h $CONJUR_MASTER_HOST_NAME \
-                -p $CONJUR_ADMIN_PASSWORD \
-		--master-altnames "$MASTER_ALTNAMES" \
+  sudo docker exec $CONJUR_MASTER_CONTAINER_NAME	 \
+                evoke configure master    		 \
+                -h $CONJUR_MASTER_HOST_NAME		 \
+                -p $CONJUR_ADMIN_PASSWORD		 \
+		--master-altnames "$MASTER_ALTNAMES"	 \
 		--follower-altnames "$FOLLOWER_ALTNAMES" \
+    		--accept-eula				 \
                 $CONJUR_ACCOUNT
 
   mkdir -p $CACHE_DIR
   echo "Caching Conjur master cert ..."
   rm -f $CONJUR_CERT_FILE
-  sudo docker cp -L $CONJUR_MASTER_CONTAINER_NAME:/opt/conjur/etc/ssl/conjur.pem $CONJUR_CERT_FILE
+  sudo docker exit $CONJUR_MASTER_CONTAINER_NAME cat /opt/conjur/etc/ssl/conjur.pem > $CONJUR_CERT_FILE
 
   echo "Caching Conjur Follower seed files..."
   rm -f $FOLLOWER_SEED_FILE

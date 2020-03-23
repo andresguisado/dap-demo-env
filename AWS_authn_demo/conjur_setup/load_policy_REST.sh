@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source ./demo.config
+source ./aws.config
 
 # Authenticates as admin user and loads policy file 
 

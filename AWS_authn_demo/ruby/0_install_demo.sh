@@ -1,17 +1,17 @@
-#!/bin/bash
+#!/bin/bash 
 ########################################
 ##  This script executes on AWS host  ##
 ########################################
 
 source ./demo.config
 
-if [[ "$(cat /etc/os-release | grep 'Ubuntu 18.04.2 LTS')" == "" ]]; then
-  echo "These installation scripts assume Ubuntu 18.04"
+if [[ "$(cat /etc/os-release | grep 'Ubuntu 18')" == "" ]]; then
+  echo "These installation scripts assume Ubuntu 18"
   exit -1
 fi
 
-if [[ "$CONJUR_MASTER_HOSTNAME" == "" ]]; then
-  echo "Please edit demo.config and set CONJUR_MASTER_HOSTNAME to the Public DNS hostname of the Conjur Master."
+if [[ "$CONJUR_MASTER_HOST_NAME" == "" ]]; then
+  echo "Please edit demo.config and set CONJUR_MASTER_HOST_NAME to the Public DNS hostname of the Conjur Master."
   exit -1
 fi
 
@@ -47,7 +47,7 @@ install_jq() {
 }
 
 load_policies() {
-   printf "\nEnter admin user name: "
+   printf "\nEnter Conjur admin user name: "
    read admin_uname
    printf "Enter the admin password (it will not be echoed): "
    read -s admin_pwd

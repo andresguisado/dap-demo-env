@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash 
 source ./demo.config
 
 echo "Invoking Summon provider explicitly..."
