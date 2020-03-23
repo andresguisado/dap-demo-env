@@ -1,2 +1,2 @@
 #!/bin/bash
-rm manifests/*.yml
+rm manifests/*.yaml
