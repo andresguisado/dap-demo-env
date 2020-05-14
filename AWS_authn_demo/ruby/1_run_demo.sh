@@ -1,5 +1,6 @@
 #!/bin/bash 
 source ./demo.config
+export CONJUR_APPLIANCE_URL=https://$CONJUR_MASTER_HOST_NAME:$CONJUR_FOLLOWER_PORT
 
 echo "Invoking Summon provider explicitly..."
 summon -p ./summon-aws.rb ./echo_secrets.sh

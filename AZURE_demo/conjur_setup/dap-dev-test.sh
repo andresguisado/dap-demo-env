@@ -1,7 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-# Test var list
 #test-var-sub1-rgrp1
 #test-var-sub1-rgrp1-sid1
 #test-var-sub1-rgrp1-uid1
@@ -15,41 +14,25 @@ function main() {
    echo "Happy paths from host1 - all should succeed."
    rgroup_identity "sub1-apps/rgrp1" "test-var-sub1-rgrp1"
    system_assigned_identity "sub1-apps/rgrp1-sid1" "test-var-sub1-rgrp1-sid1"
-   system_assigned_identity "sub1-apps/rgrp1-sid1" "test-var-sub1-rgrp1-sid1"
    user_assigned_identity "sub1-apps/rgrp1-uid1" "b3af4cc0-2f36-4fa6-a58b-43db541352b6" "test-var-sub1-rgrp1-uid1"
    user_assigned_identity "sub1-apps/rgrp2-uid1" "b7d5c172-6d43-4575-827d-5cf31ac4011a" "test-var-sub1-rgrp2-uid1"
+
    echo
    echo "###############################"
    echo "Unhappy paths from host1 - all should fail."
    echo
-   echo "Authn of other identities: Azure and/or DAP authn should fail."
-   rgroup_identity "sub2-apps/rgrp1" "test-var-sub2-rgrp1"
-   system_assigned_identity "sub2-apps/rgrp1-sid1" "test-var-sub2-rgrp1-sid1"
-   user_assigned_identity "sub2-apps/rgrp1-uid1" "0f156bc8-940f-4b32-9b51-f1993005875c" "test-var-sub2-rgrp1-uid1"
-   echo
-   echo "SoD test: sub1 rgrp1 is unable to access other secrets."
+   echo "rgrp1 identity tries to retrieve variable w/ no access"
    rgroup_identity "sub1-apps/rgrp1" "test-var-sub1-rgrp1-sid1"
-   rgroup_identity "sub1-apps/rgrp1" "test-var-sub1-rgrp1-uid1"
-   rgroup_identity "sub1-apps/rgrp1" "test-var-sub1-rgrp2-uid1"
-   rgroup_identity "sub1-apps/rgrp1" "test-var-sub2-rgrp1-uid1"
    echo
-   echo "SoD test: sub1 rgrp1 sid1 is unable to access other secrets."
+   echo "sid1 identity tries to retrieve variable w/ no access"
    system_assigned_identity "sub1-apps/rgrp1-sid1" "test-var-sub1-rgrp1"
-   system_assigned_identity "sub1-apps/rgrp1-sid1" "test-var-sub1-rgrp1-uid1"
-   system_assigned_identity "sub1-apps/rgrp1-sid1" "test-var-sub1-rgrp2-uid1"
-   system_assigned_identity "sub1-apps/rgrp1-sid1" "test-var-sub2-rgrp1-uid1"
    echo
-   echo "SoD test: sub1 rgrp1 uid1 is unable to access other secrets."
-   user_assigned_identity "sub1-apps/rgrp1-uid1" "b3af4cc0-2f36-4fa6-a58b-43db541352b6" "test-var-sub1-rgrp1"
-   user_assigned_identity "sub1-apps/rgrp1-uid1" "b3af4cc0-2f36-4fa6-a58b-43db541352b6" "test-var-sub1-rgrp1-sid1"
+   echo "uid1 identity tries to retrieve variable w/ no access"
    user_assigned_identity "sub1-apps/rgrp1-uid1" "b3af4cc0-2f36-4fa6-a58b-43db541352b6" "test-var-sub1-rgrp2-uid1"
-   user_assigned_identity "sub1-apps/rgrp1-uid1" "b3af4cc0-2f36-4fa6-a58b-43db541352b6" "test-var-sub2-rgrp1-uid1"
    echo
-   echo "SoD test: sub1 rgrp2 uid1 is unable to access other secrets."
-   user_assigned_identity "sub1-apps/rgrp2-uid1" "b7d5c172-6d43-4575-827d-5cf31ac4011a" "test-var-sub1-rgrp1"
-   user_assigned_identity "sub1-apps/rgrp2-uid1" "b7d5c172-6d43-4575-827d-5cf31ac4011a" "test-var-sub1-rgrp1-sid1"
+   echo "uid2 identity tries to retrieve variable w/ no access"
    user_assigned_identity "sub1-apps/rgrp2-uid1" "b7d5c172-6d43-4575-827d-5cf31ac4011a" "test-var-sub1-rgrp1-uid1"
-   user_assigned_identity "sub1-apps/rgrp2-uid1" "b7d5c172-6d43-4575-827d-5cf31ac4011a" "test-var-sub2-rgrp1-uid1"
+   echo
 }
 
 ################################
@@ -64,6 +47,7 @@ function user_assigned_identity() {
     echo "Secret to retrieve: $uid_secret_name"
 
     user_assigned_identity_token_endpoint="http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&client_id=${uid_client_id}&resource=https%3A%2F%2Fmanagement.azure.com%2F"
+
     getConjurTokenWithAzureIdentity $user_assigned_identity_token_endpoint $uid_hostname
     getConjurSecret $uid_secret_name
 }
@@ -78,6 +62,7 @@ function system_assigned_identity() {
     echo "Secret to retrieve: $sid_secret_name"
 
     system_assigned_identity_token_endpoint="http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https%3A%2F%2Fmanagement.azure.com%2F"
+
     getConjurTokenWithAzureIdentity $system_assigned_identity_token_endpoint $sid_hostname
     getConjurSecret $sid_secret_name
 }
@@ -92,6 +77,7 @@ function rgroup_identity() {
     echo "Secret to retrieve: $rgrpid_secret_name"
 
     rgroup_identity_token_endpoint="http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https%3A%2F%2Fmanagement.azure.com%2F"
+
     getConjurTokenWithAzureIdentity $rgroup_identity_token_endpoint $rgrpid_hostname
     getConjurSecret $rgrpid_secret_name
 }
@@ -107,6 +93,8 @@ function getConjurTokenWithAzureIdentity() {
 #    else
 #      echo "Azure token: $azure_access_token"
     fi
+    echo "Azure token: $azure_access_token"
+
     getConjurToken $azure_access_token $conjur_role
 }
 
@@ -169,4 +157,4 @@ function urlify() {
         echo $str
 }
 
-main "$@"
+main

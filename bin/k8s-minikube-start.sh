@@ -1,7 +1,7 @@
 #!/bin/bash
 
-DAP_HOME="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
-
+                # set DAP_HOME to parent directory of this script
+DAP_HOME="$(ls $0 | rev | cut -d "/" -f2- | rev)/.."
 source $DAP_HOME/config/dap.config
 source $DAP_HOME/config/kubernetes.config
 
@@ -10,9 +10,11 @@ export MINIKUBE_VM_MEMORY=6144
 export KUBERNETES_VERSION=v1.11.10
 export SSH_PUB_KEY=~/.ssh/id_dapdemo.pub
 
-if [[ $PLATFORM != kubernetes ]]; then
-  echo "PLATFORM not set to 'kubernetes'."
-  echo "Edit and source demo.config before running this script."
+if [[ $K8S_PLATFORM != minikube ]]; then
+  echo
+  echo "K8S_PLATFORM is currently set to $K8S_PLATFORM."
+  echo "Edit dap.config and change to 'minikube' before running this script."
+  echo
   exit -1
 fi
 
@@ -81,9 +83,10 @@ minikube status
 # add public key to authorized keys for SSH demos
 echo "echo $(cat $SSH_PUB_KEY) >> ~/.ssh/authorized_keys; logout" | minikube ssh
 
-## Write Minishift docker & oc config values as env var inits to speed up env loading
-OUTPUT_FILE=$DAP_HOME/config/minikube.config
-minikube docker-env >> $OUTPUT_FILE
+## Write Minishift docker config values as env var inits to speed up env loading
+DOCKER_ENV_FILE=$DAP_HOME/config/minikube.docker
+rm -f $DOCKER_ENV_FILE
+minikube docker-env > $DOCKER_ENV_FILE
 
 echo ""
 echo "Source $OUTPUT_FILE to point to docker daemon in minikube VM."

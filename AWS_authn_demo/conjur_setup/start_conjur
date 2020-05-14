@@ -11,6 +11,8 @@ main() {
   ./stop_conjur
   master_up
   cli_up
+  follower_up
+  enable_iam_authn $CONJUR_FOLLOWER_CONTAINER_NAME
 }
 
 #################
@@ -44,7 +46,7 @@ master_up() {
   mkdir -p $CACHE_DIR
   echo "Caching Conjur master cert ..."
   rm -f $CONJUR_CERT_FILE
-  sudo docker exit $CONJUR_MASTER_CONTAINER_NAME cat /opt/conjur/etc/ssl/conjur.pem > $CONJUR_CERT_FILE
+  sudo docker exec $CONJUR_MASTER_CONTAINER_NAME cat /opt/conjur/etc/ssl/conjur.pem > $CONJUR_CERT_FILE
 
   echo "Caching Conjur Follower seed files..."
   rm -f $FOLLOWER_SEED_FILE
@@ -77,6 +79,43 @@ cli_up() {
   # Login as admin
   sudo docker exec $CLI_CONTAINER_NAME \
     conjur authn login -u admin -p $CONJUR_ADMIN_PASSWORD
+}
+
+############################
+follower_up() {
+  # Bring up Conjur Follower node
+  sudo docker run -d \
+    --name $CONJUR_FOLLOWER_CONTAINER_NAME \
+    --label role=conjur_node \
+    -p "$CONJUR_FOLLOWER_PORT:443" \
+    -e "CONJUR_AUTHENTICATORS=$CONJUR_AUTHENTICATORS" \
+    --restart always \
+    --security-opt seccomp:unconfined \
+    $CONJUR_APPLIANCE_IMAGE
+
+  if $NO_DNS; then
+    # add entry to follower's /etc/hosts so $CONJUR_MASTER_HOST_NAME resolves
+    sudo docker exec -it $CONJUR_FOLLOWER_CONTAINER_NAME \
+        bash -c "echo \"$CONJUR_MASTER_HOST_IP $CONJUR_MASTER_HOST_NAME\" >> /etc/hosts"
+  fi
+
+  echo "Initializing Conjur Follower"
+  sudo docker cp $FOLLOWER_SEED_FILE \
+                $CONJUR_FOLLOWER_CONTAINER_NAME:/tmp/follower-seed.tar
+  sudo docker exec $CONJUR_FOLLOWER_CONTAINER_NAME \
+                evoke unpack seed /tmp/follower-seed.tar
+  sudo docker exec $CONJUR_FOLLOWER_CONTAINER_NAME \
+                evoke configure follower -p $CONJUR_MASTER_PORT
+
+  echo "Follower configured."
+}
+
+#################
+enable_iam_authn() {
+  local container_name=$1; shift
+  ./load_policy_REST.sh root policy/authn-iam.yaml
+  sudo docker exec $container_name \
+	  evoke variable set CONJUR_AUTHENTICATORS authn,authn-iam/$AUTHN_IAM_SERVICE_ID
 }
 
 main "$@"

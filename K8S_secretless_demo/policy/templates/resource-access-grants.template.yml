@@ -18,6 +18,11 @@
       - !variable mysql-username
       - !variable mysql-password
       - !variable mysql-sslmode
+      - !variable mssqlserver-host
+      - !variable mssqlserver-port
+      - !variable mssqlserver-username
+      - !variable mssqlserver-password
+      - !variable mssqlserver-sslmode
       - !variable http-username
       - !variable http-password
 

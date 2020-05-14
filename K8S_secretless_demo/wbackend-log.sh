@@ -1,7 +1,6 @@
 #!/bin/bash
 
 . ../config/dap.config
-. ../config/$PLATFORM.config
 . ../config/utils.sh
 
 if [[ $1 != pg && $1 != ms && $1 != http ]]; then

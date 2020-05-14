@@ -1,6 +1,5 @@
 #!/bin/bash
 source ../config/dap.config
-source ../config/$PLATFORM.config
 
 # Tags local images for Secretless demo and pushes them to registry.
 #
@@ -15,14 +14,14 @@ source ../config/$PLATFORM.config
 # All are defined in the $PLATFORM.config file and referenced in deployment manifests.
 
 LOCAL_SECRETLESS_APP_IMAGE=secretless:latest
-LOCAL_SECRETLESS_BROKER_IMAGE=secretless-broker:latest
+LOCAL_SECRETLESS_BROKER_IMAGE=cyberark/secretless-broker:latest
 LOCAL_DEMO_APP_IMAGE=cyberark/demo-app:latest
 LOCAL_PGSQL_IMAGE=pgsql:latest
 LOCAL_MYSQL_IMAGE=mysql:latest
 LOCAL_NGINX_IMAGE=nginx-secretless:latest
 
 main() {
-  ./precheck.sh
+  ./precheck_secretless.sh
 
   if $CONNECTED; then
     build

@@ -10,17 +10,19 @@ $CLI delete secret dockerpullsecret -n $TEST_APP_NAMESPACE_NAME --ignore-not-fou
 
 $CLI delete --ignore-not-found \
      -n $TEST_APP_NAMESPACE_NAME \
+     configmap/secretless-config \
+     serviceaccount/$SECRETLESS_SERVICEACCOUNT_NAME \
      service/postgres-db \
      statefulset/postgres-db \
+     service/mssqlserver-db \
+     statefulset/mssqlserver-db \
      service/mysql-db \
      statefulset/mysql-db \
      service/nginx \
      statefulset/nginx  \
      deployment/test-app-secretless \
-     service/test-app-secretless \
-     service/test-secretless-app-backend \
-     configmap/test-app-secretless-config \
-     serviceaccount/$SECRETLESS_SERVICEACCOUNT_NAME \
+     deployment/petstore \
+     service/petstore \
      &
 
 echo "Waiting for pods to terminate"

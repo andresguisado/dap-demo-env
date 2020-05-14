@@ -1,7 +1,8 @@
 #!/bin/bash 
 
 # name of secret to retrieve from Conjur
-VAR_ID=k8s-secrets/db-password
+#VAR_ID=k8s-secrets/db-password
+VAR_ID=DemoVault/CICD/CICD_Secrets/Database-Oracle-OracleDBuser/password
 
 main() {
   AUTHN_TOKEN=$(cat $CONJUR_AUTHN_TOKEN_FILE | base64 | tr -d '\r\n')

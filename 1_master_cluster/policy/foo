@@ -1,0 +1,38 @@
+---
+##################
+# define identities and group roles
+- !policy
+  id: client
+  annotations:
+    description: Client node group
+  body:
+  - !group nodes
+  - !host node1
+  - !host node2
+  - !grant
+    role: !group nodes
+    member: !host node1
+##################
+# define resources
+- !policy
+  id: secrets
+  annotations:
+    description: Define secrets resources
+  body:
+  - !group readers
+  - !variable db-username
+  - !variable db-password
+  - !permit
+    privileges: [ read, execute ]
+    roles:
+    - !group readers
+    resources:
+    - !variable db-username
+    - !variable db-password
+##################
+# define permission identities have on resources
+- !grant
+  roles:
+  - !group secrets/readers
+  members:
+  - !group client/nodes

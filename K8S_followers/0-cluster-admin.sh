@@ -16,7 +16,6 @@ source ../config/utils.sh
 
 login_as $CLUSTER_ADMIN_USERNAME $CLUSTER_ADMIN_PASSWORD
 
-
 announce "Applying Follower authn-k8s manifest..."
 
 sed -e "s#{{ CONJUR_NAMESPACE_NAME }}#$CONJUR_NAMESPACE_NAME#g" \
@@ -26,7 +25,7 @@ sed -e "s#{{ CONJUR_NAMESPACE_NAME }}#$CONJUR_NAMESPACE_NAME#g" \
 
 $CLI apply -f ./manifests/dap-follower-authn-$CONJUR_NAMESPACE_NAME.yaml -n $CONJUR_NAMESPACE_NAME
 
-if [[ "$PLATFORM" != "openshift" ]]; then
+if [[ "$K8S_PLATFORM" != "minishift" ]]; then
   exit 0
 fi
 

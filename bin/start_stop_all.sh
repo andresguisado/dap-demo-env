@@ -1,6 +1,6 @@
 #!/bin/bash
-				# set DAP_HOME to parent directory of this script
-DAP_HOME="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
+                # set DAP_HOME to parent directory of this script
+DAP_HOME="$(ls $0 | rev | cut -d "/" -f2- | rev)/.."
 
 if [[ "$1" != stop && "$1" != start ]]; then
   echo "Usage: $0 [ stop | start ]"

@@ -1,0 +1,267 @@
+#!/bin/bash
+set -euo pipefail
+
+source ../config/dap.config
+source ../config/utils.sh
+
+
+main() {
+  ./precheck_secretless.sh
+
+  login_as $DEVELOPER_USERNAME $DEVELOPER_PASSWORD
+  ./stop
+
+  load_policies
+  registry_login
+
+  # deploy backend servers
+  deploy_mysql_database
+  deploy_mssqlserver_database
+  deploy_pg_database
+  deploy_nginx
+
+  copy_conjur_config_map
+  create_app_config_map
+  $CLI create configmap secretless-config \
+    --from-file=etc/secretless.yml
+  sleep 5
+  deploy_secretless_app
+  deploy_petstore_app
+}
+
+############################
+#
+load_policies() {
+  announce "Initializing Conjur authorization policies..."
+
+  sed -e "s#{{ AUTHENTICATOR_ID }}#$AUTHENTICATOR_ID#g" \
+    ./policy/templates/service-accounts-whitelist.template.yml |
+    sed -e "s#{{ SECRETLESS_SERVICEACCOUNT_NAME }}#$SECRETLESS_SERVICEACCOUNT_NAME#g" |
+    sed -e "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g" \
+    > ./policy/service-account-whitelist.yml
+
+  sed -e "s#{{ AUTHENTICATOR_ID }}#$AUTHENTICATOR_ID#g" \
+      ./policy/templates/app-to-service-account-mapping.template.yml |
+    sed -e "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g" \
+    > ./policy/app-to-service-account-mapping.yml
+
+  sed -e "s#{{ AUTHENTICATOR_ID }}#$AUTHENTICATOR_ID#g" \
+      ./policy/templates/resource-access-grants.template.yml |
+    sed -e "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g" \
+    > ./policy/resource-access-grants.yml
+
+  POLICY_FILE_LIST="
+policy/service-account-whitelist.yml
+policy/app-to-service-account-mapping.yml
+policy/resource-access-grants.yml
+"
+
+  for i in $POLICY_FILE_LIST; do
+    echo "Loading policy file: $i"
+    load_policy_REST.sh root "./$i"
+  done
+
+  echo "Conjur policies loaded."
+}
+
+###########################
+deploy_mssqlserver_database() {
+  echo "Deploying mssqlserver backend"
+  MSSQLSERVER_DB_PROTOCOL=mssql
+  MSSQLSERVER_DB_NAME=test_app
+  MSSQLSERVER_DB_HOST=mssqlserver-db
+  MSSQLSERVER_DB_PORT=1433
+  MSSQLSERVER_DB_USERNAME=sa
+  MSSQLSERVER_DB_PASSWORD=CYberark11!!
+  MSSQLSERVER_DB_SSLMODE=disable
+
+  var_value_add_REST.sh test-app-secretless/mssqlserver-host $MSSQLSERVER_DB_HOST
+  var_value_add_REST.sh test-app-secretless/mssqlserver-port $MSSQLSERVER_DB_PORT
+  var_value_add_REST.sh test-app-secretless/mssqlserver-username $MSSQLSERVER_DB_USERNAME
+  var_value_add_REST.sh test-app-secretless/mssqlserver-password $MSSQLSERVER_DB_PASSWORD
+  var_value_add_REST.sh test-app-secretless/mssqlserver-sslmode $MSSQLSERVER_DB_SSLMODE
+
+  echo "Deploying mssqlserver backend"
+
+  sed "s#{{ IMAGE_NAME }}#$MSSQLSERVER_IMAGE#g" 			\
+    ./manifests/templates/mssqlserver.template.yml 			\
+    | sed "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g" 	\
+    | sed "s#{{ TEST_APP_DB_PASSWORD }}#$MSSQLSERVER_DB_PASSWORD#g" 	\
+    | sed "s#{{ IMAGE_PULL_POLICY }}#$IMAGE_PULL_POLICY#g" 		\
+    > ./manifests/mssqlserver.yml
+    $CLI create -f ./manifests/mssqlserver.yml
+}
+
+###########################
+deploy_mysql_database() {
+  echo "Deploying mysql backend"
+  MYSQL_DB_PROTOCOL=mysql
+  MYSQL_DB_NAME=test_app
+  MYSQL_DB_HOST=mysql-db
+  MYSQL_DB_PORT=3306
+  MYSQL_DB_USERNAME=test_app
+  MYSQL_DB_SSLMODE=disable
+  MYSQL_DB_PASSWORD=$(openssl rand -hex 12)	# Create the random database password
+
+  var_value_add_REST.sh test-app-secretless/mysql-host $MYSQL_DB_HOST
+  var_value_add_REST.sh test-app-secretless/mysql-port $MYSQL_DB_PORT
+  var_value_add_REST.sh test-app-secretless/mysql-username $MYSQL_DB_USERNAME
+  var_value_add_REST.sh test-app-secretless/mysql-password $MYSQL_DB_PASSWORD
+  var_value_add_REST.sh test-app-secretless/mysql-sslmode $MYSQL_DB_SSLMODE
+
+  echo "Deploying mysql backend"
+
+  sed "s#{{ IMAGE_NAME }}#$MYSQL_IMAGE#g" 				\
+	./manifests/templates/mysql.template.yml 			\
+    | sed "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g" 	\
+    | sed "s#{{ TEST_APP_DB_PASSWORD }}#$MYSQL_DB_PASSWORD#g" 		\
+    | sed "s#{{ IMAGE_PULL_POLICY }}#$IMAGE_PULL_POLICY#g" 		\
+    | $CLI create -f -
+}
+
+###########################
+deploy_pg_database() {
+  echo "Deploying postgres backend"
+  PG_DB_NAME=test_app
+  PG_DB_USERNAME=test_app
+  PG_DB_SSLMODE=disable
+  PG_DB_HOST=postgres-db
+  PG_DB_PORT=5432
+  PG_DB_PROTOCOL=postgresql
+  PG_DB_HOST=$PG_DB_HOST
+  PG_DB_PORT=$PG_DB_PORT
+  PG_DB_PASSWORD=$(openssl rand -hex 12)	# Create the random database password
+
+  # Set connections values in Conjur
+  var_value_add_REST.sh test-app-secretless/pg-host $PG_DB_HOST
+  var_value_add_REST.sh test-app-secretless/pg-port $PG_DB_PORT
+  var_value_add_REST.sh test-app-secretless/pg-username $PG_DB_USERNAME
+  var_value_add_REST.sh test-app-secretless/pg-password $PG_DB_PASSWORD
+  var_value_add_REST.sh test-app-secretless/pg-sslmode $PG_DB_SSLMODE
+
+  sed "s#{{ IMAGE_NAME }}#$PGSQL_IMAGE#g" 				\
+	./manifests/templates/postgres.template.yml 			\
+    | sed "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g" 	\
+    | sed "s#{{ IMAGE_PULL_POLICY }}#$IMAGE_PULL_POLICY#g" 		\
+    | sed "s#{{ TEST_APP_DB_PASSWORD }}#$PG_DB_PASSWORD#g" 		\
+    > ./manifests/pgsql.yaml
+  $CLI create -f ./manifests/pgsql.yaml
+
+    setup_pg_logging
+}
+
+###########################
+setup_pg_logging() {  #  Adds connection & disconnection logging
+  wait_for_running_pod postgres-db-0 $TEST_APP_NAMESPACE_NAME
+
+  # HACK ALERT: turn on connect/disconnect logging - not elegant but conf file doesn't exist in image
+#  if [ $PLATFORM = openshift ]; then
+#    PG_CONF_FILE=/var/lib/pgsql/data/userdata/postgresql.conf
+#    PG_RUNUSER=""
+#    PG_DATA=/var/lib/pgsql/data/userdata
+#    PG_CTL=/opt/rh/rh-postgresql95/root/usr/bin/pg_ctl
+#  else
+    PG_CONF_FILE=/var/lib/postgresql/data/postgresql.conf
+    PG_RUNUSER="runuser -l postgres -c"
+    PG_DATA=/var/lib/postgresql/data 
+    PG_CTL=/usr/lib/postgresql/9.6/bin/pg_ctl
+#  fi
+
+  $CLI exec -it postgres-db-0 -- bash -c "sed -e 's#\#log_connections = off#log_connections = on#' -i $PG_CONF_FILE"
+  $CLI exec -it postgres-db-0 -- bash -c "sed -e 's#\#log_disconnections = off#log_disconnections = on#' -i $PG_CONF_FILE"
+  $CLI exec -it postgres-db-0 -- bash -c "$PG_RUNUSER PGDATA=$PG_DATA $PG_CTL reload"
+
+  wait_for_running_pod postgres-db-0 $TEST_APP_NAMESPACE_NAME
+}
+
+###########################
+deploy_nginx() {
+  $CLI delete --ignore-not-found \
+     service/nginx \
+     statefulset/nginx
+
+  echo "Deploying nginx backend"
+
+  # Note: all server-side authn creds are provisioned in the image build
+  # Which begs the question - how would you ever rotate that?
+
+  HTTP_UNAME=demo
+  HTTP_PWD=demo
+  var_value_add_REST.sh test-app-secretless/http-username $HTTP_UNAME
+  var_value_add_REST.sh test-app-secretless/http-password $HTTP_PWD
+
+  sed "s#{{ IMAGE_NAME }}#$NGINX_IMAGE#g" 				\
+	./manifests/templates/nginx.template.yml 			\
+    | sed "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g" 	\
+    | sed "s#{{ IMAGE_PULL_POLICY }}#$IMAGE_PULL_POLICY#g" 		\
+    | $CLI create -f -
+}
+
+###########################
+# create copy of conjur config map in the app namespace
+copy_conjur_config_map() {
+  $CLI delete --ignore-not-found cm $CONJUR_CONFIG_MAP -n $TEST_APP_NAMESPACE_NAME
+  $CLI get cm $CONJUR_CONFIG_MAP -n $CONJUR_NAMESPACE_NAME -o yaml 			\
+    | sed "s/namespace: $CONJUR_NAMESPACE_NAME/namespace: $TEST_APP_NAMESPACE_NAME/"	\
+    | $CLI create -f -
+}
+
+###########################
+# APP_CONFIG_MAP defines values for app authentication
+#
+create_app_config_map() {
+  $CLI delete --ignore-not-found configmap $APP_CONFIG_MAP -n $TEST_APP_NAMESPACE_NAME
+  
+  # Set authn URL to either Follower service in cluster or external Follower
+  if $CONJUR_FOLLOWERS_IN_CLUSTER; then
+    conjur_appliance_url=https://conjur-follower.$CONJUR_NAMESPACE_NAME.svc.cluster.local/api
+  else
+    conjur_appliance_url=https://$CONJUR_MASTER_HOST_NAME:$CONJUR_FOLLOWER_PORT
+  fi
+
+  conjur_authenticator_url=$conjur_appliance_url/authn-k8s/$AUTHENTICATOR_ID
+  conjur_authn_login_prefix=host/conjur/authn-k8s/$AUTHENTICATOR_ID/apps/$TEST_APP_NAMESPACE_NAME/service_account
+
+  $CLI create configmap $APP_CONFIG_MAP \
+        -n $TEST_APP_NAMESPACE_NAME \
+        --from-literal=conjur-authn-url="$conjur_authenticator_url" \
+        --from-literal=conjur-authn-login="$conjur_authn_login_prefix/$SECRETLESS_SERVICEACCOUNT_NAME"
+}
+
+###########################
+deploy_petstore_app() {
+  sed -e "s#{{ SECRETLESS_BROKER_IMAGE }}#$SECRETLESS_BROKER_IMAGE#g" 			\
+	./manifests/templates/petstore.template.yml 					\
+  | sed -e "s#{{ SECRETLESS_APP_IMAGE }}#$DEMO_APP_IMAGE#g"			\
+  | sed -e "s#{{ SECRETLESS_SERVICEACCOUNT_NAME }}#$SECRETLESS_SERVICEACCOUNT_NAME#g"	\
+  | sed -e "s#{{ IMAGE_PULL_POLICY }}#$IMAGE_PULL_POLICY#g"				\
+  | sed -e "s#{{ CONJUR_MASTER_HOST_NAME }}#$CONJUR_MASTER_HOST_NAME#g" 		\
+  | sed -e "s#{{ CONJUR_MASTER_HOST_IP }}#$CONJUR_MASTER_HOST_IP#g"			\
+  | sed -e "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g"			\
+  | sed -e "s#{{ CONJUR_CONFIG_MAP }}#$CONJUR_CONFIG_MAP#g"				\
+  | sed -e "s#{{ APP_CONFIG_MAP }}#$APP_CONFIG_MAP#g"					\
+  > ./manifests/petstore-$TEST_APP_NAMESPACE_NAME.yml
+  $CLI create -f ./manifests/petstore-$TEST_APP_NAMESPACE_NAME.yml
+
+  echo "Petstore app deployed."
+}
+
+###########################
+deploy_secretless_app() {
+  sed -e "s#{{ SECRETLESS_BROKER_IMAGE }}#$SECRETLESS_BROKER_IMAGE#g" 			\
+	./manifests/templates/test-app-secretless.template.yml 				\
+  | sed -e "s#{{ SECRETLESS_APP_IMAGE }}#$SECRETLESS_APP_IMAGE#g"			\
+  | sed -e "s#{{ SECRETLESS_SERVICEACCOUNT_NAME }}#$SECRETLESS_SERVICEACCOUNT_NAME#g"	\
+  | sed -e "s#{{ IMAGE_PULL_POLICY }}#$IMAGE_PULL_POLICY#g"				\
+  | sed -e "s#{{ CONJUR_MASTER_HOST_NAME }}#$CONJUR_MASTER_HOST_NAME#g" 		\
+  | sed -e "s#{{ CONJUR_MASTER_HOST_IP }}#$CONJUR_MASTER_HOST_IP#g"			\
+  | sed -e "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g"			\
+  | sed -e "s#{{ CONJUR_CONFIG_MAP }}#$CONJUR_CONFIG_MAP#g"				\
+  | sed -e "s#{{ APP_CONFIG_MAP }}#$APP_CONFIG_MAP#g"					\
+  > ./manifests/test-app-secretless-$TEST_APP_NAMESPACE_NAME.yml
+  $CLI create -f ./manifests/test-app-secretless-$TEST_APP_NAMESPACE_NAME.yml
+
+  echo "Secretless test app deployed."
+}
+
+main "$@"

@@ -1,2 +1,4 @@
-- !delete
-  record: !group sub1-rgrp1
+- !revoke
+  role: !group conjur/authn-azure/sub1/apps
+  members:
+  - !group sub2-apps

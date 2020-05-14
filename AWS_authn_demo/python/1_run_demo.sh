@@ -1,4 +1,3 @@
 #!/bin/bash
 source ../ruby/demo.config
-
-python demo.py
+summon -p ./iam_provider.py env | grep ^DB_

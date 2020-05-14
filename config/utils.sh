@@ -13,7 +13,7 @@ fi
 #
 login_as() {
   local user=$1
-  if [[ "$PLATFORM" == "openshift" ]]; then
+  if [[ "$K8S_PLATFORM" == "minishift" ]]; then
     if [[ $# == 1 ]]; then
       oc login -u $user
     else
@@ -25,8 +25,8 @@ login_as() {
 
 ######################
 registry_login() {
-  if [[ "${PLATFORM}" = "openshift" ]]; then
-    docker login -u _ -p $(oc whoami -t) $DOCKER_REGISTRY_URL
+  if [[ "${K8S_PLATFORM}" = "minishift" ]]; then
+    echo $(oc whoami -t ) | docker login -u _ --password-stdin $DOCKER_REGISTRY_URL
   else
     if ! [ "${DOCKER_EMAIL}" = "" ]; then
       $CLI delete --ignore-not-found secret dockerpullsecret

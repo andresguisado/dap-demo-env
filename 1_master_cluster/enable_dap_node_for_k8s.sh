@@ -2,7 +2,7 @@
 set -eou pipefail
 
 source ../config/dap.config
-source ../config/$PLATFORM.config
+source ../config/$K8S_PLATFORM.k8s
 
 # This script enables authn-k8s in a running DAP node (Master or Follower) running in Docker.
 # It's useful for enabling authn-k8s after standing the node up.
@@ -20,15 +20,14 @@ DAP_NODE_URL=$CONJUR_APPLIANCE_URL
 
 #################
 main() {
-  load_follower_authn_policies
-  initialize_ca
-  add_new_authenticator
+  configure_authn_k8s
+  whitelist_configured_authenticators
   wait_till_node_is_responsive
   curl -k $DAP_NODE_URL/info
 }
 
 ###################################
-load_follower_authn_policies() {
+configure_authn_k8s() {
   echo "Initializing Conjur authorization policies..."
 
   sed -e "s#{{ AUTHENTICATOR_ID }}#$AUTHENTICATOR_ID#g" \
@@ -53,10 +52,7 @@ load_follower_authn_policies() {
   done
 
   echo "Conjur policies loaded."
-}
 
-############################
-initialize_ca() {
   if [[ $DAP_NODE_CONTAINER_NAME == $CONJUR_MASTER_CONTAINER_NAME ]]; then
     echo "Initializing CA in Conjur Master..."
     docker exec $DAP_NODE_CONTAINER_NAME \
@@ -69,8 +65,11 @@ initialize_ca() {
 }
 
 ############################
-add_new_authenticator() {
+whitelist_configured_authenticators() {
   echo "Updating list of whitelisted authenticators..."
+  docker exec $DAP_NODE_CONTAINER_NAME \
+	evoke variable set CONJUR_AUTHENTICATORS $(curl -sk https://localhost/info | jq -r '.authenticators.configured | join(",")')
+
 					# get current authenticators in conjur.conf
   docker exec $DAP_NODE_CONTAINER_NAME cat /opt/conjur/etc/conjur.conf > temp.conf
   set +e

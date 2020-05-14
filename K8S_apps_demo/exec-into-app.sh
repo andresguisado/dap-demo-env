@@ -1,6 +1,5 @@
 #!/bin/bash
 source ../config/dap.config
-source ../config/$PLATFORM.config
 source ../config/utils.sh
 
 if [[ $# != 1 ]]; then

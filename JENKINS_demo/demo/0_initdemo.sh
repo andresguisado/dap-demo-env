@@ -24,10 +24,6 @@ yes
 END
   conjur authn login -u $CONJUR_AUTHN_LOGIN -p $CONJUR_ADMIN_PASSWORD
   conjur policy load root policy.yml
-  conjur variable values add jenkins-secrets/test_db_username TestDBuserName
-  conjur variable values add jenkins-secrets/test_db_password $(openssl rand -hex 12)
-  conjur variable values add jenkins-secrets/prod_db_username ProdDBuserName
-  conjur variable values add jenkins-secrets/prod_db_password $(openssl rand -hex 12)
   JENKINS_HOST_API_KEY=$(conjur host rotate_api_key --host $JENKINS_HOSTNAME)
 }
 

@@ -6,7 +6,7 @@ echo "Creating namespace & RBAC role bindings..."
 
 login_as $CLUSTER_ADMIN_USERNAME $CLUSTER_ADMIN_PASSWORD
 
-if [[ $PLATFORM == openshift \
+if [[ $PLATFORM == minishift \
 	&& "$($CLI get user $DEVELOPER_USERNAME --no-headers --ignore-not-found)" == "" ]]; then
   $CLI create user $DEVELOPER_USERNAME
   $CLI create useridentitymapping anypassword:$DEVELOPER_USERNAME $DEVELOPER_USERNAME
@@ -15,6 +15,7 @@ fi
 sed -e "s#{{ TEST_APP_NAMESPACE_NAME }}#$TEST_APP_NAMESPACE_NAME#g"   \
      ./manifests/templates/dap-user-rbac.template.yaml           |
     sed -e "s#{{ CONJUR_NAMESPACE_NAME }}#$CONJUR_NAMESPACE_NAME#g" |
+    sed -e "s#{{ CONJUR_SERVICEACCOUNT_NAME }}#$CONJUR_SERVICEACCOUNT_NAME#g" |
     sed -e "s#{{ DEVELOPER_USERNAME }}#$DEVELOPER_USERNAME#g" \
     > ./manifests/dap-user-rbac-$TEST_APP_NAMESPACE_NAME.yaml
 

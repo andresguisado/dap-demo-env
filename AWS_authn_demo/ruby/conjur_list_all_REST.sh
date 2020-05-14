@@ -1,6 +1,7 @@
 #!/bin/bash
 
 source ./demo.config
+export CONJUR_APPLIANCE_URL=https://$CONJUR_MASTER_HOST_NAME:$CONJUR_FOLLOWER_PORT
 
 # Authenticates as admin user and lists all resources
 

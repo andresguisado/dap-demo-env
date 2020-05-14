@@ -54,11 +54,11 @@ load_policies() {
    export AUTHN_USERNAME=$admin_uname
    export AUTHN_PASSWORD=$admin_pwd
 
-  ./load_policy_REST.sh root policy/authn-iam.yaml
-  ./load_policy_REST.sh root policy/cust-portal.yaml
-  ./load_policy_REST.sh root policy/authn-grant.yaml
-  ./var_value_add_REST.sh $APPLICATION_NAME/database/username OracleDBuser
-  ./var_value_add_REST.sh $APPLICATION_NAME/database/password ueus#!9
+  ./load_policy_REST.sh root policy/identities.yaml
+  ./load_policy_REST.sh root policy/secrets.yaml
+  ./var_value_add_REST.sh database/username OracleDBuser
+  ./var_value_add_REST.sh database/password ueus#!9
+  ./load_policy_REST.sh root policy/access-grants.yaml
 }
 
 main "$@"

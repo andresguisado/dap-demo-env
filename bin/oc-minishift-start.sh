@@ -1,9 +1,9 @@
 #!/bin/bash -e
 
-rm -f $DAP_HOME/config/minishift.config
+rm -f $DAP_HOME/config/minishift.env
 
-		# magic that sets DAP_HOME to parent directory of this script
-DAP_HOME="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
+                # set DAP_HOME to parent directory of this script
+DAP_HOME="$(ls $0 | rev | cut -d "/" -f2- | rev)/.."
 source $DAP_HOME/config/dap.config
 
 export MINISHIFT_VM_MEMORY=8GB
@@ -11,9 +11,11 @@ export OPENSHIFT_VERSION=v3.11.0
 export SSH_PUB_KEY=~/.ssh/id_dapdemo.pub
 export MINISHIFT_CACHE_TARFILE=~/conjur-install-images/minishift-3.11-cache.tar.gz
 
-if [[ $PLATFORM != openshift ]]; then
-  echo "Platform not set to 'openshift'."
-  echo "Edit and source demo.config before running this script."
+if [[ $K8S_PLATFORM != minishift ]]; then
+  echo
+  echo "K8S_PLATFORM is currently set to $K8S_PLATFORM."
+  echo "Edit dap.config and change to 'minishift' before running this script."
+  echo
   exit -1
 fi
 
@@ -46,7 +48,6 @@ case $1 in
 	if [[ ! -f $KUBECONFIG ]]; then
 	  unset KUBECONFIG
 	fi
-	rm -rf ~/.kube
 	;;
   * ) 
 	echo "Usage: $0 [ reinstall | start | stop | delete ]"
@@ -66,6 +67,7 @@ else
 		  --disk-size "30G" \
                   --vm-driver virtualbox \
                   --show-libmachine-logs \
+ 		  --insecure-registry "192.168.1.0/24" \
                   --openshift-version "$OPENSHIFT_VERSION"
 
   # minikube also wants to use .kube, the default for KUBECONFIG
@@ -96,13 +98,16 @@ echo "sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sl
 # add public key to authorized keys for SSH demos
 echo "echo $(cat $SSH_PUB_KEY) >> ~/.ssh/authorized_keys" | minishift ssh
 
-## Write Minishift docker & oc config values as env var inits to speed up env loading
-OUTPUT_FILE=$DAP_HOME/config/minishift.config
-rm -f $OUTPUT_FILE
-minishift oc-env > $OUTPUT_FILE
-minishift docker-env >> $OUTPUT_FILE
-echo "export DOCKER_REGISTRY_PATH=$(minishift openshift registry)" >> $OUTPUT_FILE
-echo "export CONJUR_MASTER_HOST_IP=$(minishift ip)" >> $OUTPUT_FILE
+# Write Minishift oc config values as env var inits to speed up env loading
+K8S_ENV_FILE=$DAP_HOME/config/minishift.env
+rm -f $K8S_ENV_FILE
+minishift oc-env > $K8S_ENV_FILE
+
+# Write Minishift docker config values as env var inits 
+DOCKER_ENV_FILE=$DAP_HOME/config/minishift.docker
+rm -f $DOCKER_ENV_FILE
+minishift docker-env > $DOCKER_ENV_FILE
+echo "export DOCKER_PLATFORM_REGISTRY_URL=$(minishift openshift registry)" >> $DOCKER_ENV_FILE
 
 echo ""
 echo "Source $OUTPUT_FILE to point to docker daemon in minishift VM."

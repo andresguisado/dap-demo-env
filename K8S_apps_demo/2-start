@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -uo pipefail
 
 source ../config/dap.config
 source ../config/utils.sh
@@ -95,9 +95,12 @@ create_app_config_map() {
   $CLI create configmap $APP_CONFIG_MAP \
         -n $TEST_APP_NAMESPACE_NAME \
         --from-literal=conjur-authn-url="$conjur_authenticator_url" \
-        --from-literal=conjur-authn-login-init="$conjur_authn_login_prefix/test-app-summon-init" \
-        --from-literal=conjur-authn-login-sidecar="$conjur_authn_login_prefix/test-app-summon-sidecar" \
-        --from-literal=conjur-authn-login-injection="host/conjur/authn-k8s/$AUTHENTICATOR_ID/apps/$TEST_APP_NAMESPACE_NAME/*/*"
+        --from-literal=conjur-authn-login-init=\
+"$conjur_authn_login_prefix/test-app-summon-init" \
+        --from-literal=conjur-authn-login-sidecar=\
+"$conjur_authn_login_prefix/test-app-summon-sidecar" \
+        --from-literal=conjur-authn-login-injection=\
+"host/conjur/authn-k8s/$AUTHENTICATOR_ID/apps/$TEST_APP_NAMESPACE_NAME/*/*"
 }
 
 ###########################

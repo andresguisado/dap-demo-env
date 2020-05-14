@@ -34,13 +34,13 @@ spec:
       containers:
       - name: postgres-db
         imagePullPolicy: IfNotPresent
-        image: 172.30.1.1:5000/pgsql:latest
+        image: 192.168.1.10:5000/pgsql:latest
         ports:
           - containerPort: 5432
         env:
           - name: POSTGRES_USER
             value: test_app
           - name: POSTGRES_PASSWORD
-            value: 99cb8bdc670f853f993ecca3
+            value: b0dc031f3fca35b33a2610af
           - name: POSTGRES_DB
             value: test_app

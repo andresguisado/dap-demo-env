@@ -20,11 +20,11 @@ registry_login
 announce "Tagging & pushing local docker images to registry"
 
 docker tag $CONJUR_APPLIANCE_IMAGE $CONJUR_APPLIANCE_REG_IMAGE
-#docker tag $SEED_FETCHER_IMAGE $SEED_FETCHER_REG_IMAGE 
+docker tag $SEED_FETCHER_IMAGE $SEED_FETCHER_REG_IMAGE 
 
 if ! $MINIKUBE; then
   docker push $CONJUR_APPLIANCE_REG_IMAGE
-#  docker push $SEED_FETCHER_REG_IMAGE
+  docker push $SEED_FETCHER_REG_IMAGE
 fi
 
 announce "Images pushed to registry"

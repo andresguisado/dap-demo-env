@@ -35,3 +35,7 @@
   resources:
   - !variable secrets/db-username
   - !variable secrets/db-password
+
+#- !grant
+#  role: !group DemoVault/CICD/CICD_Secrets/delegation/consumers
+#  member: !group client/nodes

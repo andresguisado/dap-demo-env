@@ -1,0 +1,75 @@
+# Define project namespace
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: testapps
+  labels:
+    name: testapps
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: secretless-stateful-app
+  namespace: testapps
+
+# Role binding to cluster role enabling baz to access the DAP config map
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: dap-cm-access-binding
+  namespace: cyberark
+subjects:
+- kind: User
+  name: baz
+roleRef:
+  kind: ClusterRole
+  name: dap-cmaccess
+  apiGroup: rbac.authorization.k8s.io
+
+# Grant project admin privileges to baz
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: project-admin-access-binding
+  namespace: testapps
+subjects:
+- kind: User
+  name: baz
+roleRef:
+  kind: ClusterRole
+  name: admin
+  apiGroup: rbac.authorization.k8s.io
+
+# Grant image-builder privileges to baz
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: project-image-builder-binding
+  namespace: testapps
+subjects:
+- kind: User
+  name: baz
+roleRef:
+  kind: ClusterRole
+  name: system:image-builder
+  apiGroup: rbac.authorization.k8s.io
+
+# Grant registry privileges to baz
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: project-registry-binding
+  namespace: testapps
+subjects:
+- kind: User
+  name: baz
+roleRef:
+  kind: ClusterRole
+  name: system:registry
+  apiGroup: rbac.authorization.k8s.io

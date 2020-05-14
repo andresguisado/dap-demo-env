@@ -2,4 +2,4 @@
 pushd java
   ./_clean.sh
 popd
-rm conjur-policy/*.yaml logs/*
+rm policy/*.yaml logs/*

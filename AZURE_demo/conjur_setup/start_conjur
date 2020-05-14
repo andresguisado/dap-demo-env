@@ -66,8 +66,8 @@ cli_up() {
     -c "sleep infinity"
 
   # if not relying on DNS - add entry for master host name to cli container's /etc/hosts
-#  sudo docker exec $CLI_CONTAINER_NAME \
-#    bash -c "echo \"$CONJUR_MASTER_HOST_IP    $CONJUR_MASTER_HOST_NAME\" >> /etc/hosts"
+  sudo docker exec $CLI_CONTAINER_NAME \
+    bash -c "echo \"$CONJUR_MASTER_HOST_IP    $CONJUR_MASTER_HOST_NAME\" >> /etc/hosts"
 
   # Initialize connection to service (create .conjurrc and conjur-xx.pem cert)
   sudo docker exec $CLI_CONTAINER_NAME \

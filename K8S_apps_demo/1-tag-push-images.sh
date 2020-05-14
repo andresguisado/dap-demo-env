@@ -23,6 +23,7 @@ if $CONNECTED; then
   popd
 fi
 
+set -x
 registry_login
 
 # tag & push local K8S_followers images to registry
